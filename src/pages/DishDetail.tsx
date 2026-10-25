@@ -1,5 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import PageHero from '../components/PageHero'
+import PageClosingCta from '../components/PageClosingCta'
+import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { DISHES, MENU_CATEGORIES } from '../content/menu'
 import { Sparkles, ArrowLeft, ShieldCheck } from 'lucide-react'
 
@@ -8,6 +10,11 @@ export default function DishDetail() {
 
   const dish = DISHES.find(d => d.slug === slug || d.id === slug)
   const category = dish ? MENU_CATEGORIES.find(c => c.id === dish.categoryId) : null
+
+  useDocumentMeta(
+    dish ? `${dish.name} — Pure Vegetarian | Hestiia Restaurant` : 'Dish Not Found',
+    dish ? dish.description : 'Explore pure vegetarian dishes at Hestiia Restaurant Kanpur.'
+  )
 
   if (!dish) {
     return (
@@ -203,6 +210,12 @@ export default function DishDetail() {
           </div>
         </div>
       </div>
+
+      <PageClosingCta
+        title={`Savor our ${dish.name} at`}
+        accentWord="Hestiia"
+        subtitle="Prepared fresh to order in our pure vegetarian kitchen in Shyam Nagar, Kanpur."
+      />
     </>
   )
 }

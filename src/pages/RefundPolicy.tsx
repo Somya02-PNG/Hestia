@@ -1,21 +1,38 @@
 import PageHero from '../components/PageHero'
+import PageClosingCta from '../components/PageClosingCta'
+import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { RESTAURANT } from '../content/restaurant'
 
 export default function RefundPolicy() {
+  useDocumentMeta(
+    'Refund & Cancellation Policy | Hestiia Restaurant',
+    'Cancellation and refund guidelines for table reservations and orders at Hestiia Restaurant Kanpur.'
+  )
+
   return (
     <>
       <PageHero
         title="Refund & Cancellation"
         accentWord="Policy"
-        intro="Guidelines governing dining reservations, deposit parameters, and service satisfaction."
+        intro="Guidelines governing dining reservations, deposit parameters, and guest service satisfaction."
         currentPage="Refund Policy"
       />
 
-      <div className="container" style={{ padding: '48px 0 80px' }}>
-        <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '24px', fontSize: '14px', lineHeight: 1.8, color: 'rgba(246, 239, 228, 0.78)' }}>
-          {/* TODO: Refund policy verification */}
+      <div className="container" style={{ padding: '64px 0 80px' }}>
+        <div
+          style={{
+            maxWidth: '800px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '28px',
+            fontSize: '14px',
+            lineHeight: 1.8,
+            color: 'rgba(246, 239, 228, 0.78)',
+          }}
+        >
           <section>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--color-brass)', marginBottom: '8px' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', color: 'var(--color-brass)', marginBottom: '8px' }}>
               1. Dining Table Reservations
             </h2>
             <p>
@@ -24,7 +41,7 @@ export default function RefundPolicy() {
           </section>
 
           <section>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--color-brass)', marginBottom: '8px' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', color: 'var(--color-brass)', marginBottom: '8px' }}>
               2. Orders Placed via Partner Platforms
             </h2>
             <p>
@@ -33,6 +50,8 @@ export default function RefundPolicy() {
           </section>
         </div>
       </div>
+
+      <PageClosingCta />
     </>
   )
 }

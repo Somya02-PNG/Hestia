@@ -1,142 +1,257 @@
+import { useState } from 'react'
+import { Tag, Copy, Check, Clock, Sparkles } from 'lucide-react'
 import PageHero from '../components/PageHero'
+import PageClosingCta from '../components/PageClosingCta'
+import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { OFFERS_CONFIG } from '../content/offers'
-import { Link } from 'react-router-dom'
-import { Tag, Sparkles } from 'lucide-react'
+import { RESTAURANT } from '../content/restaurant'
+import { InstagramIcon } from '../components/icons/InstagramIcon'
 
 export default function Offers() {
-  const hasOffers = OFFERS_CONFIG.enabled && OFFERS_CONFIG.items.length > 0
+  useDocumentMeta(
+    'Exclusive Offers & Dining Privileges',
+    'Explore current seasonal dining offers, discounts, and privileges at Hestiia Restaurant in Shyam Nagar, Kanpur.'
+  )
+
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code)
+    setCopiedCode(code)
+    setTimeout(() => {
+      setCopiedCode(null)
+    }, 2000)
+  }
+
+  const hasActiveOffers = OFFERS_CONFIG.enabled && OFFERS_CONFIG.items.length > 0
 
   return (
     <>
       <PageHero
-        title="Special Privileges &"
-        accentWord="Offers"
-        intro="Curated seasonal dining privileges, celebratory vouchers, and festive culinary offerings."
+        title="Curated Dining"
+        accentWord="Privileges"
+        intro="Seasonal celebrations, festive packages, and exclusive dining privileges at our Shyam Nagar sanctuary."
         currentPage="Offers"
       />
 
-      <div className="container" style={{ padding: '56px 0 80px' }}>
-        {hasOffers ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-            {OFFERS_CONFIG.items.map(offer => (
-              <div
-                key={offer.id}
-                style={{
-                  backgroundColor: 'rgba(38, 31, 26, 0.7)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(184, 154, 100, 0.2)',
-                  padding: '24px',
-                }}
-              >
-                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', margin: '0 0 8px 0', color: 'var(--color-brass)' }}>
-                  {offer.title}
-                </h3>
-                <p style={{ fontSize: '14px', color: 'rgba(246, 239, 228, 0.8)', margin: '0 0 16px 0', lineHeight: 1.6 }}>
-                  {offer.description}
-                </p>
-                {offer.code && (
-                  <span style={{ display: 'inline-block', padding: '4px 10px', backgroundColor: 'rgba(184, 154, 100, 0.15)', borderRadius: '4px', fontSize: '12px', fontWeight: 600, color: 'var(--color-brass)' }}>
-                    Code: {offer.code}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div
-            style={{
-              maxWidth: '640px',
-              padding: '48px 36px',
-              backgroundColor: 'rgba(38, 31, 26, 0.7)',
-              borderRadius: '16px',
-              border: '1px solid rgba(184, 154, 100, 0.2)',
-              textAlign: 'center',
-              boxShadow: '0 16px 36px rgba(0, 0, 0, 0.5)',
-            }}
-          >
+      <section
+        style={{
+          padding: '64px 0 96px',
+          backgroundColor: '#16110E',
+          minHeight: '45vh',
+        }}
+      >
+        <div className="container">
+          {!hasActiveOffers ? (
+            /* Friendly Empty / Coming Soon State */
             <div
               style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(184, 154, 100, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
+                maxWidth: '620px',
+                margin: '0 auto',
+                padding: '48px 36px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(38, 31, 26, 0.75)',
+                border: '1px solid rgba(184, 154, 100, 0.25)',
+                textAlign: 'center',
+                boxShadow: '0 20px 48px rgba(0, 0, 0, 0.4)',
               }}
             >
-              <Tag size={26} color="var(--color-brass)" />
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(184, 154, 100, 0.15)',
+                  border: '1px solid rgba(184, 154, 100, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                  color: 'var(--color-brass)',
+                }}
+              >
+                <Sparkles size={24} />
+              </div>
+
+              <span
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  color: 'var(--color-brass)',
+                  display: 'block',
+                  marginBottom: '10px',
+                }}
+              >
+                Seasonal Dining Specials
+              </span>
+
+              <h2
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 'clamp(28px, 4vw, 38px)',
+                  fontWeight: 300,
+                  color: 'var(--color-text-inverse)',
+                  margin: '0 0 16px',
+                }}
+              >
+                New Offers <em style={{ fontStyle: 'italic', color: 'var(--color-brass-light)' }}>Coming Soon</em>
+              </h2>
+
+              <p
+                style={{
+                  fontSize: '14px',
+                  lineHeight: 1.7,
+                  color: 'rgba(246, 239, 228, 0.75)',
+                  marginBottom: '32px',
+                }}
+              >
+                We regularly introduce festive thali celebrations, holiday banquets, and weekday dining treats. Follow our official Instagram page to be the first to know about new perks and flash dining discounts.
+              </p>
+
+              {RESTAURANT.social.instagram && (
+                <a
+                  href={RESTAURANT.social.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '13px 26px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-brass)',
+                    color: '#1F1A16',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 16px rgba(184, 154, 100, 0.25)',
+                    transition: 'transform 0.2s ease',
+                  }}
+                >
+                  <InstagramIcon size={16} />
+                  <span>Follow @hestiiarestaurant on Instagram</span>
+                </a>
+              )}
             </div>
-
-            <span
+          ) : (
+            /* Active Offers Grid */
+            <div
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 12px',
-                borderRadius: '20px',
-                backgroundColor: 'rgba(184, 154, 100, 0.12)',
-                color: 'var(--color-brass)',
-                fontSize: '11px',
-                fontFamily: 'var(--font-sans)',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                marginBottom: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '28px',
               }}
             >
-              <Sparkles size={12} />
-              Coming Soon
-            </span>
+              {OFFERS_CONFIG.items.map(offer => (
+                <div
+                  key={offer.id}
+                  style={{
+                    padding: '32px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(38, 31, 26, 0.8)',
+                    border: '1px solid rgba(184, 154, 100, 0.25)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '20px',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <Tag size={16} color="var(--color-brass)" />
+                      <h3
+                        style={{
+                          fontFamily: 'var(--font-serif)',
+                          fontSize: '24px',
+                          fontWeight: 400,
+                          color: 'var(--color-text-inverse)',
+                          margin: 0,
+                        }}
+                      >
+                        {offer.title}
+                      </h3>
+                    </div>
 
-            <h2
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 'clamp(26px, 4vw, 36px)',
-                fontWeight: 400,
-                margin: '0 0 12px 0',
-                color: 'var(--color-text-inverse)',
-              }}
-            >
-              Exclusive Privileges Coming Soon.
-            </h2>
+                    <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'rgba(246, 239, 228, 0.8)', margin: '0 0 16px' }}>
+                      {offer.description}
+                    </p>
 
-            <p
-              style={{
-                fontSize: '14px',
-                fontFamily: 'var(--font-sans)',
-                color: 'rgba(246, 239, 228, 0.75)',
-                lineHeight: 1.7,
-                margin: '0 0 28px 0',
-              }}
-            >
-              We are curating bespoke dining privileges and seasonal festival rewards. In the meantime, join us daily in Shyam Nagar to experience our complete pure vegetarian a la carte menu.
-            </p>
+                    {offer.terms && offer.terms.length > 0 && (
+                      <ul
+                        style={{
+                          paddingLeft: '18px',
+                          margin: '0 0 16px',
+                          fontSize: '12px',
+                          lineHeight: 1.6,
+                          color: 'rgba(246, 239, 228, 0.6)',
+                        }}
+                      >
+                        {offer.terms.map((term, i) => (
+                          <li key={i}>{term}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
 
-            <Link
-              to="/menu"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 24px',
-                backgroundColor: 'var(--color-brass)',
-                color: '#1F1A16',
-                borderRadius: '4px',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                textDecoration: 'none',
-              }}
-            >
-              Explore 193 Menu Delicacies
-            </Link>
-          </div>
-        )}
-      </div>
+                  <div
+                    style={{
+                      borderTop: '1px solid rgba(184, 154, 100, 0.15)',
+                      paddingTop: '16px',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '12px',
+                    }}
+                  >
+                    {offer.code && (
+                      <button
+                        onClick={() => handleCopy(offer.code!)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(184, 154, 100, 0.15)',
+                          border: '1px dashed var(--color-brass)',
+                          color: 'var(--color-brass-light)',
+                          fontFamily: 'monospace',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {copiedCode === offer.code ? <Check size={14} color="#4ADE80" /> : <Copy size={14} />}
+                        <span>{copiedCode === offer.code ? 'Copied!' : offer.code}</span>
+                      </button>
+                    )}
+
+                    {offer.validTill && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'rgba(246, 239, 228, 0.5)' }}>
+                        <Clock size={12} />
+                        <span>Valid till {offer.validTill}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Closing CTA Band */}
+      <PageClosingCta
+        title="Dine with Us at"
+        accentWord="Hestiia"
+        subtitle="Enjoy authentic flavours and thoughtful hospitality on your next visit to Shyam Nagar, Kanpur."
+      />
     </>
   )
 }

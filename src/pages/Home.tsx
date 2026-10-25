@@ -9,12 +9,18 @@ import ExperienceTeaser from '../components/home/ExperienceTeaser'
 import OffersBand from '../components/home/OffersBand'
 import ReviewsTeaser from '../components/home/ReviewsTeaser'
 import VisitTeaser from '../components/home/VisitTeaser'
+import { useDocumentMeta } from '../hooks/useDocumentMeta'
 
 interface HomeProps {
   isReady: boolean
 }
 
 export default function Home({ isReady }: HomeProps) {
+  useDocumentMeta(
+    'Hestiia Restaurant — Pure Vegetarian Dining, Kanpur',
+    'A pure vegetarian culinary sanctuary in Shyam Nagar, Kanpur. Savor authentic North Indian heritage curries, sizzling Indo-Chinese wok dishes, and warm hospitality.'
+  )
+
   return (
     <>
       {/* 1. Hero (unchanged video, playback logic, and copy) */}
