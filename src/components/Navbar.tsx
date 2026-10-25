@@ -1,52 +1,151 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ArrowUpRight, Phone } from 'lucide-react'
+import { Menu, X, ArrowUpRight, Phone, MessageSquare, Navigation, Calendar, ShoppingBag } from 'lucide-react'
 import Magnet from './reactbits/Magnet'
-import { NAV_LINKS } from '../content/navigation'
+import { NAV_LINKS, type NavLink } from '../content/navigation'
 import { RESTAURANT } from '../content/restaurant'
+import { smoothScroller } from '../lib/lenis'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('')
 
+  const location = useLocation()
+  const navigate = useNavigate()
+  const drawerRef = useRef<HTMLDivElement>(null)
+  const firstFocusableRef = useRef<HTMLButtonElement>(null)
+
+  // Scroll spy on homepage
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 40)
 
-      // Active section spy
-      const sections = NAV_LINKS.map(link => document.querySelector(link.href) as HTMLElement).filter(Boolean)
+      if (location.pathname !== '/') {
+        setActiveSection('')
+        return
+      }
+
+      // Check section offsets
+      const sectionLinks = NAV_LINKS.filter(l => l.isSectionLink)
+      const sections = sectionLinks
+        .map(link => {
+          const id = link.href.replace('/#', '')
+          return document.getElementById(id)
+        })
+        .filter(Boolean) as HTMLElement[]
+
       const scrollPos = window.scrollY + 200
 
       for (let i = sections.length - 1; i >= 0; i--) {
         const sec = sections[i]
         if (sec && sec.offsetTop <= scrollPos) {
           setActiveSection(sec.id)
-          break
+          return
         }
+      }
+
+      // If at very top of homepage
+      if (window.scrollY < 200) {
+        setActiveSection('')
       }
     }
 
+    handleScroll()
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [location.pathname])
 
-  // Lock body scroll and listen for Escape key when mobile menu is open
+  // Close mobile drawer on route change (stored previous location pattern)
+  const currentPath = location.pathname + location.hash
+  const [prevPath, setPrevPath] = useState(currentPath)
+
+  if (prevPath !== currentPath) {
+    setPrevPath(currentPath)
+    if (mobileOpen) {
+      setMobileOpen(false)
+    }
+  }
+
+  // Handle lock scroll and focus trap for mobile drawer
   useEffect(() => {
     if (mobileOpen) {
       document.body.classList.add('nav-open')
+      document.body.style.overflow = 'hidden'
+
+      // Focus first element in drawer
+      const timer = setTimeout(() => {
+        firstFocusableRef.current?.focus()
+      }, 100)
+
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setMobileOpen(false)
+        if (e.key === 'Escape') {
+          setMobileOpen(false)
+        }
+        if (e.key === 'Tab' && drawerRef.current) {
+          const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
+          if (focusable.length === 0) return
+          const first = focusable[0]
+          const last = focusable[focusable.length - 1]
+
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
       }
+
       window.addEventListener('keydown', handleKeyDown)
       return () => {
+        clearTimeout(timer)
         document.body.classList.remove('nav-open')
+        document.body.style.overflow = ''
         window.removeEventListener('keydown', handleKeyDown)
       }
     } else {
       document.body.classList.remove('nav-open')
+      document.body.style.overflow = ''
     }
   }, [mobileOpen])
+
+  // Handle section click: if on home page, smooth scroll; if not, navigate to "/#id"
+  const handleLinkClick = useCallback((e: React.MouseEvent, link: NavLink) => {
+    if (link.isSectionLink) {
+      const sectionId = link.href.replace('/#', '')
+      if (location.pathname === '/') {
+        e.preventDefault()
+        const el = document.getElementById(sectionId)
+        if (el) {
+          smoothScroller.scrollTo(el, { offset: -70 })
+        }
+      } else {
+        // Navigating from another route: navigate to "/#id"
+        e.preventDefault()
+        navigate(`/#${sectionId}`)
+      }
+    }
+    setMobileOpen(false)
+  }, [location.pathname, navigate])
+
+  const handleReserveClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault()
+      const el = document.getElementById('visit')
+      if (el) {
+        smoothScroller.scrollTo(el, { offset: -70 })
+      }
+    } else {
+      e.preventDefault()
+      navigate('/#visit')
+    }
+    setMobileOpen(false)
+  }
 
   return (
     <>
@@ -59,29 +158,58 @@ export default function Navbar() {
           right: 0,
           zIndex: 100,
           transition: 'background-color 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease',
-          backgroundColor: scrolled ? 'rgba(31, 26, 22, 0.92)' : 'transparent',
+          backgroundColor: scrolled ? 'rgba(31, 26, 22, 0.94)' : 'transparent',
           backdropFilter: scrolled ? 'blur(16px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
           borderBottom: scrolled ? '1px solid rgba(184, 154, 100, 0.15)' : '1px solid transparent',
         }}
       >
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 'var(--header-height)' }}>
-          {/* Logo — flex-shrink 0 so it never gets squeezed */}
-          <a href="#home" className="navbar__logo" aria-label="Hestiia Restaurant Home" style={{ flexShrink: 0 }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '26px', fontWeight: 300, letterSpacing: '0.04em', color: 'var(--color-text-inverse)' }}>
-              Hestiia<span style={{ fontSize: '12px', verticalAlign: 'super', color: 'var(--color-brass)' }}>®</span>
+        <div
+          className="container"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            height: 'var(--header-height)',
+          }}
+        >
+          {/* Logo — flex-shrink 0 */}
+          <Link
+            to="/"
+            className="navbar__logo"
+            aria-label="Hestiia Restaurant Home"
+            style={{ flexShrink: 0, textDecoration: 'none' }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '26px',
+                fontWeight: 300,
+                letterSpacing: '0.04em',
+                color: 'var(--color-text-inverse)',
+              }}
+            >
+              Hestiia
+              <span style={{ fontSize: '12px', verticalAlign: 'super', color: 'var(--color-brass)' }}>
+                ®
+              </span>
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Nav Links */}
           <nav className="navbar__links" aria-label="Primary Navigation">
-            <ul style={{ display: 'flex', alignItems: 'center', gap: '32px', listStyle: 'none', margin: 0, padding: 0 }}>
+            <ul style={{ display: 'flex', alignItems: 'center', gap: '28px', listStyle: 'none', margin: 0, padding: 0 }}>
               {NAV_LINKS.map(link => {
-                const isActive = activeSection === link.id
+                const isHome = location.pathname === '/'
+                const isActive = link.isSectionLink
+                  ? isHome && activeSection === link.id
+                  : location.pathname === link.href
+
                 return (
                   <li key={link.id}>
                     <a
                       href={link.href}
+                      onClick={e => handleLinkClick(e, link)}
                       className={`navbar__link ${isActive ? 'navbar__link--active' : ''}`}
                       style={{
                         position: 'relative',
@@ -116,33 +244,91 @@ export default function Navbar() {
             </ul>
           </nav>
 
-          {/* Desktop CTA with Magnet */}
-          <div className="navbar__action" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-            <Magnet strength={0.25} padding={30}>
-              <a
-                href="#visit"
-                className="btn btn-primary"
-                id="nav-reserve-btn"
+          {/* Actions: Cart Icon, Magnet Button, Mobile Hamburger */}
+          <div
+            className="navbar__action"
+            style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}
+          >
+            {/* Cart Icon Placeholder (Routes to /cart) */}
+            <Link
+              to="/cart"
+              aria-label="Shopping Cart (0 items)"
+              title="Shopping Cart"
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(38, 31, 26, 0.6)',
+                border: '1px solid rgba(184, 154, 100, 0.22)',
+                color: 'var(--color-text-inverse)',
+                textDecoration: 'none',
+                transition: 'border-color 0.2s, background-color 0.2s, color 0.2s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--color-brass)'
+                e.currentTarget.style.color = 'var(--color-brass)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.22)'
+                e.currentTarget.style.color = 'var(--color-text-inverse)'
+              }}
+            >
+              <ShoppingBag size={18} />
+              <span
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '12px 24px',
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
                   backgroundColor: 'var(--color-brass)',
                   color: '#1F1A16',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  borderRadius: 'var(--radius-sm)',
-                  textDecoration: 'none',
-                  transition: 'background-color 0.2s ease, transform 0.2s ease',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
                 }}
               >
-                Reserve a Table
-              </a>
-            </Magnet>
+                0
+              </span>
+            </Link>
+
+            {/* Desktop Magnet Reserve Button */}
+            <div className="navbar__desktop-cta" style={{ display: 'flex', alignItems: 'center' }}>
+              <Magnet strength={0.25} padding={30}>
+                <a
+                  href="/#visit"
+                  onClick={handleReserveClick}
+                  className="btn btn-primary"
+                  id="nav-reserve-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 22px',
+                    backgroundColor: 'var(--color-brass)',
+                    color: '#1F1A16',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    borderRadius: 'var(--radius-sm)',
+                    textDecoration: 'none',
+                    transition: 'background-color 0.2s ease, transform 0.2s ease',
+                  }}
+                >
+                  Reserve a Table
+                </a>
+              </Magnet>
+            </div>
 
             {/* Mobile Hamburger Button */}
             <button
@@ -151,12 +337,13 @@ export default function Navbar() {
               aria-label={mobileOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
               aria-expanded={mobileOpen}
               style={{
-                display: 'none',
                 background: 'none',
                 border: 'none',
                 color: 'var(--color-text-inverse)',
                 padding: '8px',
                 cursor: 'pointer',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               {mobileOpen ? <X size={26} /> : <Menu size={26} />}
@@ -165,103 +352,260 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Full-Screen Mobile Drawer */}
+      {/* Mobile Nav Right Slide-in Drawer with Backdrop (Below 1024px) */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 99,
-              backgroundColor: '#1F1A16',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              padding: '100px 24px 48px',
-            }}
-          >
-            <nav aria-label="Mobile Navigation">
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {NAV_LINKS.map((link, index) => (
-                  <motion.li
-                    key={link.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.08 * index, duration: 0.35 }}
-                    style={{ marginBottom: '24px' }}
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => setMobileOpen(false)}
+              aria-hidden="true"
+              style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(10, 8, 6, 0.75)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                zIndex: 998,
+              }}
+            />
+
+            {/* Right Slide-in Drawer */}
+            <motion.aside
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile Navigation Drawer"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: 'min(420px, 88vw)',
+                backgroundColor: '#1A1512',
+                borderLeft: '1px solid rgba(184, 154, 100, 0.2)',
+                boxShadow: '-10px 0 35px rgba(0, 0, 0, 0.65)',
+                zIndex: 999,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                paddingTop: 'calc(24px + env(safe-area-inset-top, 0px))',
+                paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+                paddingLeft: '28px',
+                paddingRight: '28px',
+                overflowY: 'auto',
+              }}
+            >
+              {/* Drawer Top Bar: Brand & Close Button */}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingBottom: '20px',
+                    marginBottom: '24px',
+                    borderBottom: '1px solid rgba(184, 154, 100, 0.14)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: '22px',
+                      color: 'var(--color-text-inverse)',
+                    }}
                   >
-                    <a
-                      href={link.href}
-                      onClick={() => setMobileOpen(false)}
-                      style={{
-                        fontFamily: 'var(--font-serif)',
-                        fontSize: 'clamp(38px, 9vw, 54px)',
-                        fontWeight: 300,
-                        fontStyle: 'italic',
-                        textTransform: 'lowercase',
-                        color: 'var(--color-text-inverse)',
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <span>{link.label}</span>
-                      <ArrowUpRight size={24} color="var(--color-brass)" />
-                    </a>
-                  </motion.li>
-                ))}
-              </ul>
-            </nav>
+                    Hestiia<span style={{ fontSize: '11px', color: 'var(--color-brass)' }}>®</span>
+                  </span>
 
-            {/* Mobile Drawer Bottom Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <a
-                href="#visit"
-                onClick={() => setMobileOpen(false)}
+                  <button
+                    ref={firstFocusableRef}
+                    type="button"
+                    onClick={() => setMobileOpen(false)}
+                    aria-label="Close navigation drawer"
+                    style={{
+                      background: 'rgba(38, 31, 26, 0.8)',
+                      border: '1px solid rgba(184, 154, 100, 0.25)',
+                      borderRadius: '50%',
+                      width: '38px',
+                      height: '38px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--color-text-inverse)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Staggered Navigation Links */}
+                <nav aria-label="Mobile Navigation Links">
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                    {NAV_LINKS.map((link, index) => {
+                      const isHome = location.pathname === '/'
+                      const isActive = link.isSectionLink
+                        ? isHome && activeSection === link.id
+                        : location.pathname === link.href
+
+                      return (
+                        <motion.li
+                          key={link.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.04 * index, duration: 0.28 }}
+                          style={{ marginBottom: '10px' }}
+                        >
+                          <a
+                            href={link.href}
+                            onClick={e => handleLinkClick(e, link)}
+                            style={{
+                              fontFamily: 'var(--font-serif)',
+                              fontSize: 'clamp(22px, 5vw, 28px)',
+                              fontWeight: 300,
+                              fontStyle: 'italic',
+                              textTransform: 'lowercase',
+                              color: isActive ? 'var(--color-brass)' : 'var(--color-text-inverse)',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '4px 0',
+                              transition: 'color 0.2s ease',
+                            }}
+                          >
+                            <span>{link.label}</span>
+                            <ArrowUpRight size={20} color="var(--color-brass)" />
+                          </a>
+                        </motion.li>
+                      )
+                    })}
+                  </ul>
+                </nav>
+              </div>
+
+              {/* Drawer Bottom Area: Call, WhatsApp, Directions, Reserve */}
+              <div
                 style={{
+                  paddingTop: '24px',
+                  borderTop: '1px solid rgba(184, 154, 100, 0.14)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '16px',
-                  backgroundColor: 'var(--color-brass)',
-                  color: '#1F1A16',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
+                  flexDirection: 'column',
+                  gap: '12px',
                 }}
               >
-                Reserve a Table
-              </a>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  {/* Call Action */}
+                  <a
+                    href={`tel:${RESTAURANT.phone.e164}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '12px 10px',
+                      backgroundColor: 'rgba(38, 31, 26, 0.8)',
+                      border: '1px solid rgba(184, 154, 100, 0.25)',
+                      color: 'var(--color-text-inverse)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 500,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <Phone size={14} color="var(--color-brass)" />
+                    <span>Call</span>
+                  </a>
 
-              <a
-                href={`tel:${RESTAURANT.phone.e164}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '14px',
-                  border: '1px solid rgba(184, 154, 100, 0.3)',
-                  color: 'var(--color-text-inverse)',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-sans)',
-                  textDecoration: 'none',
-                }}
-              >
-                <Phone size={16} color="var(--color-brass)" />
-                <span>Call {RESTAURANT.phone.display}</span>
-              </a>
-            </div>
-          </motion.div>
+                  {/* WhatsApp Action */}
+                  <a
+                    href={RESTAURANT.whatsapp.chatUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '12px 10px',
+                      backgroundColor: 'rgba(38, 31, 26, 0.8)',
+                      border: '1px solid rgba(184, 154, 100, 0.25)',
+                      color: 'var(--color-text-inverse)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 500,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <MessageSquare size={14} color="#25D366" />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  {/* Directions Action */}
+                  <a
+                    href={RESTAURANT.platforms.googleMaps}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '12px 10px',
+                      backgroundColor: 'rgba(38, 31, 26, 0.8)',
+                      border: '1px solid rgba(184, 154, 100, 0.25)',
+                      color: 'var(--color-text-inverse)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 500,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <Navigation size={14} color="var(--color-brass)" />
+                    <span>Directions</span>
+                  </a>
+
+                  {/* Reserve Action */}
+                  <a
+                    href="/#visit"
+                    onClick={handleReserveClick}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '12px 10px',
+                      backgroundColor: 'var(--color-brass)',
+                      color: '#1F1A16',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <Calendar size={14} />
+                    <span>Reserve</span>
+                  </a>
+                </div>
+              </div>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
     </>

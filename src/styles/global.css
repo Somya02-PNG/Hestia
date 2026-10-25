@@ -487,8 +487,9 @@ h1, h2, h3, h4 {
   padding: 14px 36px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .navbar__links { display: none; }
+  .navbar__desktop-cta { display: none; }
   .navbar__hamburger { display: flex; }
 }
 
