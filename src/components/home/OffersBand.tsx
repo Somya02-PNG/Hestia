@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { OFFERS_CONFIG } from '../../content/offers'
 import { Tag, ArrowRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function OffersBand() {
   if (!OFFERS_CONFIG.enabled || !OFFERS_CONFIG.items || OFFERS_CONFIG.items.length === 0) {
@@ -10,7 +11,11 @@ export default function OffersBand() {
   const primaryOffer = OFFERS_CONFIG.items[0]
 
   return (
-    <section
+    <motion.section
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       className="offers-band"
       style={{
         backgroundColor: '#261F1A',
@@ -41,27 +46,29 @@ export default function OffersBand() {
           </div>
         </div>
 
-        <Link
-          to="/offers"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 16px',
-            backgroundColor: 'var(--color-brass)',
-            color: '#1F1A16',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            textDecoration: 'none',
-          }}
-        >
-          <span>View Offer</span>
-          <ArrowRight size={13} />
-        </Link>
+        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}>
+          <Link
+            to="/offers"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              backgroundColor: 'var(--color-brass)',
+              color: '#1F1A16',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              textDecoration: 'none',
+            }}
+          >
+            <span>View Offer</span>
+            <ArrowRight size={13} />
+          </Link>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   )
 }

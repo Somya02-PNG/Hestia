@@ -1,13 +1,23 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Users, Music, HeartHandshake } from 'lucide-react'
+import { motion } from 'framer-motion'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
 
 export default function ExperienceTeaser() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+
   const cards = [
     {
       id: 'family-dining',
       title: 'Family Dining Sanctuary',
       badge: 'Certified Pure Veg',
-      badgeColor: '#2F7D4F',
+      badgeColor: '#4ADE80',
       description: 'Generous table layouts, warm acoustic pacing, and dedicated hospitality designed for relaxed family dinners and celebrations.',
       icon: HeartHandshake,
     },
@@ -29,18 +39,108 @@ export default function ExperienceTeaser() {
     },
   ]
 
+  useEffect(() => {
+    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const ctx = gsap.context(() => {
+      if (isReduced) {
+        gsap.from([headerRef.current, gridRef.current ? gridRef.current.children : []], {
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 85%',
+          },
+        })
+        return
+      }
+
+      const mm = gsap.matchMedia()
+
+      // Desktop
+      mm.add('(min-width: 1024px)', () => {
+        gsap.from(headerRef.current ? headerRef.current.children : [], {
+          opacity: 0,
+          y: 20,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 80%',
+          },
+        })
+
+        if (gridRef.current) {
+          const cardsEl = Array.from(gridRef.current.children)
+          ScrollTrigger.batch(cardsEl, {
+            start: 'top 85%',
+            once: true,
+            onEnter: batch => {
+              gsap.from(batch, {
+                opacity: 0,
+                y: 30,
+                duration: 0.8,
+                stagger: 0.12,
+                ease: 'power3.out',
+                overwrite: true,
+              })
+            },
+          })
+        }
+      })
+
+      // Mobile
+      mm.add('(max-width: 1023px)', () => {
+        gsap.from(headerRef.current, {
+          opacity: 0,
+          y: 16,
+          duration: 0.6,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+          },
+        })
+
+        if (gridRef.current) {
+          const cardsEl = Array.from(gridRef.current.children)
+          ScrollTrigger.batch(cardsEl, {
+            start: 'top 90%',
+            once: true,
+            onEnter: batch => {
+              gsap.from(batch, {
+                opacity: 0,
+                y: 18,
+                duration: 0.65,
+                stagger: 0.08,
+                ease: 'power3.out',
+                overwrite: true,
+              })
+            },
+          })
+        }
+      })
+    }, sectionRef)
+
+    return () => ctx.revert()
+  }, [])
+
   return (
     <section
+      ref={sectionRef}
       className="experience-teaser section section-dark"
       style={{
         padding: 'clamp(56px, 8vw, 88px) 0',
         backgroundColor: '#1F1A16',
         borderTop: '1px solid rgba(184, 154, 100, 0.12)',
+        overflow: 'hidden',
       }}
     >
       <div className="container">
         {/* Header */}
         <div
+          ref={headerRef}
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -79,28 +179,35 @@ export default function ExperienceTeaser() {
             </h2>
           </div>
 
-          <Link
-            to="/experience"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: 'var(--color-brass)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              fontWeight: 600,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-            }}
+          <motion.div
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span>Explore The Experience</span>
-            <ArrowRight size={14} />
-          </Link>
+            <Link
+              to="/experience"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--color-brass)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+              }}
+            >
+              <span>Explore The Experience</span>
+              <ArrowRight size={14} />
+            </Link>
+          </motion.div>
         </div>
 
-        {/* 3 Cards */}
+        {/* 3 Cards with Framer Motion hover & tap */}
         <div
+          ref={gridRef}
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -110,8 +217,10 @@ export default function ExperienceTeaser() {
           {cards.map(card => {
             const Icon = card.icon
             return (
-              <div
+              <motion.div
                 key={card.id}
+                whileHover={{ y: -6, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
+                whileTap={{ scale: 0.98 }}
                 style={{
                   backgroundColor: 'rgba(38, 31, 26, 0.75)',
                   borderRadius: '12px',
@@ -120,6 +229,15 @@ export default function ExperienceTeaser() {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
+                  transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.45)'
+                  e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.5)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.18)'
+                  e.currentTarget.style.boxShadow = 'none'
                 }}
               >
                 <div>
@@ -199,7 +317,7 @@ export default function ExperienceTeaser() {
                     <ArrowRight size={12} />
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>

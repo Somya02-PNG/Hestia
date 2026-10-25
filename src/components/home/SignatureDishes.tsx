@@ -1,22 +1,121 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { POPULAR_DISHES, MENU_CATEGORIES } from '../../content/menu'
+
+gsap.registerPlugin(ScrollTrigger)
 
 export default function SignatureDishes() {
   const featuredDishes = POPULAR_DISHES.slice(0, 6)
+  const sectionRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const ctx = gsap.context(() => {
+      if (isReduced) {
+        gsap.from([headerRef.current, gridRef.current ? gridRef.current.children : []], {
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 85%',
+          },
+        })
+        return
+      }
+
+      const mm = gsap.matchMedia()
+
+      // Desktop
+      mm.add('(min-width: 1024px)', () => {
+        gsap.from(headerRef.current ? headerRef.current.children : [], {
+          opacity: 0,
+          y: 20,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 80%',
+          },
+        })
+
+        if (gridRef.current) {
+          const cards = Array.from(gridRef.current.children)
+          ScrollTrigger.batch(cards, {
+            start: 'top 85%',
+            once: true,
+            onEnter: batch => {
+              gsap.from(batch, {
+                opacity: 0,
+                y: 28,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: 'power3.out',
+                overwrite: true,
+              })
+            },
+          })
+        }
+      })
+
+      // Mobile
+      mm.add('(max-width: 1023px)', () => {
+        gsap.from(headerRef.current, {
+          opacity: 0,
+          y: 16,
+          duration: 0.6,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+          },
+        })
+
+        if (gridRef.current) {
+          const cards = Array.from(gridRef.current.children)
+          ScrollTrigger.batch(cards, {
+            start: 'top 90%',
+            once: true,
+            onEnter: batch => {
+              gsap.from(batch, {
+                opacity: 0,
+                y: 18,
+                duration: 0.6,
+                stagger: 0.08,
+                ease: 'power3.out',
+                overwrite: true,
+              })
+            },
+          })
+        }
+      })
+    }, sectionRef)
+
+    return () => ctx.revert()
+  }, [])
 
   return (
     <section
+      ref={sectionRef}
       className="signature-dishes-teaser section section-dark"
       style={{
         padding: 'clamp(56px, 8vw, 88px) 0',
         backgroundColor: '#1F1A16',
         borderTop: '1px solid rgba(184, 154, 100, 0.12)',
+        overflow: 'hidden',
       }}
     >
       <div className="container">
         {/* Header */}
         <div
+          ref={headerRef}
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -55,28 +154,35 @@ export default function SignatureDishes() {
             </h2>
           </div>
 
-          <Link
-            to="/menu"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: 'var(--color-brass)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              fontWeight: 600,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-            }}
+          <motion.div
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span>See Full Menu (193 Dishes)</span>
-            <ArrowRight size={14} />
-          </Link>
+            <Link
+              to="/menu"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--color-brass)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+              }}
+            >
+              <span>See Full Menu (193 Dishes)</span>
+              <ArrowRight size={14} />
+            </Link>
+          </motion.div>
         </div>
 
-        {/* 6 Dish Cards Grid */}
+        {/* 6 Dish Cards Grid with Framer Motion hover & tap */}
         <div
+          ref={gridRef}
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -90,8 +196,10 @@ export default function SignatureDishes() {
             const imgAlt = dish.image?.alt || `${dish.name} — Pure Vegetarian Dining at Hestiia`
 
             return (
-              <div
+              <motion.div
                 key={dish.id}
+                whileHover={{ y: -6, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
+                whileTap={{ scale: 0.98 }}
                 style={{
                   backgroundColor: 'rgba(38, 31, 26, 0.75)',
                   borderRadius: '12px',
@@ -99,9 +207,17 @@ export default function SignatureDishes() {
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'transform 0.25s ease, border-color 0.25s ease',
+                  transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
                 }}
                 className="dish-teaser-card"
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.45)'
+                  e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.5)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.18)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
               >
                 {/* Image */}
                 <div style={{ position: 'relative', width: '100%', paddingTop: '62%', overflow: 'hidden', backgroundColor: '#16120F' }}>
@@ -118,6 +234,13 @@ export default function SignatureDishes() {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
+                        transition: 'transform 0.5s ease',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'scale(1.06)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'scale(1)'
                       }}
                     />
                   )}
@@ -236,34 +359,41 @@ export default function SignatureDishes() {
                     </Link>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>
 
         {/* Center CTA */}
         <div style={{ textAlign: 'center' }}>
-          <Link
-            to="/menu"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '12px 28px',
-              backgroundColor: 'var(--color-brass)',
-              color: '#1F1A16',
-              borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '12px',
-              fontWeight: 600,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-            }}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            style={{ display: 'inline-block' }}
           >
-            <span>See Full 193-Dish Menu</span>
-            <ArrowRight size={14} />
-          </Link>
+            <Link
+              to="/menu"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 28px',
+                backgroundColor: 'var(--color-brass)',
+                color: '#1F1A16',
+                borderRadius: 'var(--radius-sm)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '12px',
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+              }}
+            >
+              <span>See Full 193-Dish Menu</span>
+              <ArrowRight size={14} />
+            </Link>
+          </motion.div>
         </div>
       </div>
     </section>

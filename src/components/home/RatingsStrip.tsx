@@ -1,12 +1,53 @@
-import { RATINGS } from '../../content/ratings'
-import { Star, ShieldCheck, MapPin } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { Star, ShieldCheck, MapPin } from 'lucide-react'
+import { motion } from 'framer-motion'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { RATINGS } from '../../content/ratings'
+
+gsap.registerPlugin(ScrollTrigger)
 
 export default function RatingsStrip() {
   const scoredRatings = RATINGS.filter(r => r.score !== null)
+  const stripRef = useRef<HTMLElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const ctx = gsap.context(() => {
+      if (isReduced) {
+        gsap.from(contentRef.current, {
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: stripRef.current,
+            start: 'top 92%',
+          },
+        })
+        return
+      }
+
+      // Smooth scroll entrance with subtle reveal
+      gsap.from(contentRef.current, {
+        opacity: 0,
+        y: 14,
+        duration: 0.8,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: stripRef.current,
+          start: 'top 90%',
+        },
+      })
+    }, stripRef)
+
+    return () => ctx.revert()
+  }, [])
 
   return (
     <section
+      ref={stripRef}
       className="ratings-strip"
       aria-label="Guest Ratings & Certifications"
       style={{
@@ -14,9 +55,11 @@ export default function RatingsStrip() {
         borderTop: '1px solid rgba(184, 154, 100, 0.15)',
         borderBottom: '1px solid rgba(184, 154, 100, 0.15)',
         padding: '16px 0',
+        overflow: 'hidden',
       }}
     >
       <div
+        ref={contentRef}
         className="container"
         style={{
           display: 'flex',
@@ -29,7 +72,7 @@ export default function RatingsStrip() {
         {/* Certification & City Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={16} color="#2F7D4F" />
+            <ShieldCheck size={16} color="#4ADE80" />
             <span
               style={{
                 fontFamily: 'var(--font-sans)',
@@ -57,7 +100,12 @@ export default function RatingsStrip() {
         {/* Platform Scores */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           {scoredRatings.map(item => (
-            <div key={item.platform} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <motion.div
+              key={item.platform}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'default' }}
+            >
               <Star size={13} fill="var(--color-brass)" stroke="var(--color-brass)" />
               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-text-inverse)' }}>
                 {item.score?.toFixed(1)}
@@ -70,24 +118,31 @@ export default function RatingsStrip() {
                   ({item.count})
                 </span>
               )}
-            </div>
+            </motion.div>
           ))}
 
-          <Link
-            to="/reviews"
-            style={{
-              fontSize: '11px',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'var(--color-brass)',
-              textDecoration: 'none',
-              marginLeft: '4px',
-            }}
+          <motion.div
+            whileHover={{ x: 3 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            All Reviews →
-          </Link>
+            <Link
+              to="/reviews"
+              style={{
+                fontSize: '11px',
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--color-brass)',
+                textDecoration: 'none',
+                marginLeft: '4px',
+                display: 'inline-block',
+              }}
+            >
+              All Reviews →
+            </Link>
+          </motion.div>
         </div>
       </div>
     </section>
