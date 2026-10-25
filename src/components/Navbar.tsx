@@ -1,63 +1,31 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, ArrowUpRight, Phone, MessageSquare, Navigation, Calendar, ShoppingBag } from 'lucide-react'
 import Magnet from './reactbits/Magnet'
-import { NAV_LINKS, type NavLink } from '../content/navigation'
+import { NAV_LINKS, MOBILE_NAV_LINKS } from '../content/navigation'
 import { RESTAURANT } from '../content/restaurant'
-import { smoothScroller } from '../lib/lenis'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [activeSection, setActiveSection] = useState('')
 
   const location = useLocation()
-  const navigate = useNavigate()
   const drawerRef = useRef<HTMLDivElement>(null)
   const firstFocusableRef = useRef<HTMLButtonElement>(null)
 
-  // Scroll spy on homepage
+  // Scroll detection for navbar background/blur
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 40)
-
-      if (location.pathname !== '/') {
-        setActiveSection('')
-        return
-      }
-
-      // Check section offsets
-      const sectionLinks = NAV_LINKS.filter(l => l.isSectionLink)
-      const sections = sectionLinks
-        .map(link => {
-          const id = link.href.replace('/#', '')
-          return document.getElementById(id)
-        })
-        .filter(Boolean) as HTMLElement[]
-
-      const scrollPos = window.scrollY + 200
-
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const sec = sections[i]
-        if (sec && sec.offsetTop <= scrollPos) {
-          setActiveSection(sec.id)
-          return
-        }
-      }
-
-      // If at very top of homepage
-      if (window.scrollY < 200) {
-        setActiveSection('')
-      }
     }
 
     handleScroll()
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [location.pathname])
+  }, [])
 
-  // Close mobile drawer on route change (stored previous location pattern)
+  // Close mobile drawer on route change
   const currentPath = location.pathname + location.hash
   const [prevPath, setPrevPath] = useState(currentPath)
 
@@ -74,7 +42,6 @@ export default function Navbar() {
       document.body.classList.add('nav-open')
       document.body.style.overflow = 'hidden'
 
-      // Focus first element in drawer
       const timer = setTimeout(() => {
         firstFocusableRef.current?.focus()
       }, 100)
@@ -114,39 +81,6 @@ export default function Navbar() {
     }
   }, [mobileOpen])
 
-  // Handle section click: if on home page, smooth scroll; if not, navigate to "/#id"
-  const handleLinkClick = useCallback((e: React.MouseEvent, link: NavLink) => {
-    if (link.isSectionLink) {
-      const sectionId = link.href.replace('/#', '')
-      if (location.pathname === '/') {
-        e.preventDefault()
-        const el = document.getElementById(sectionId)
-        if (el) {
-          smoothScroller.scrollTo(el, { offset: -70 })
-        }
-      } else {
-        // Navigating from another route: navigate to "/#id"
-        e.preventDefault()
-        navigate(`/#${sectionId}`)
-      }
-    }
-    setMobileOpen(false)
-  }, [location.pathname, navigate])
-
-  const handleReserveClick = (e: React.MouseEvent) => {
-    if (location.pathname === '/') {
-      e.preventDefault()
-      const el = document.getElementById('visit')
-      if (el) {
-        smoothScroller.scrollTo(el, { offset: -70 })
-      }
-    } else {
-      e.preventDefault()
-      navigate('/#visit')
-    }
-    setMobileOpen(false)
-  }
-
   return (
     <>
       <header
@@ -173,7 +107,7 @@ export default function Navbar() {
             height: 'var(--header-height)',
           }}
         >
-          {/* Logo — flex-shrink 0 */}
+          {/* Logo */}
           <Link
             to="/"
             className="navbar__logo"
@@ -196,21 +130,21 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Nav Links (Route-based with NavLink) */}
           <nav className="navbar__links" aria-label="Primary Navigation">
-            <ul style={{ display: 'flex', alignItems: 'center', gap: '28px', listStyle: 'none', margin: 0, padding: 0 }}>
+            <ul style={{ display: 'flex', alignItems: 'center', gap: '26px', listStyle: 'none', margin: 0, padding: 0 }}>
               {NAV_LINKS.map(link => {
-                const isHome = location.pathname === '/'
-                const isActive = link.isSectionLink
-                  ? isHome && activeSection === link.id
-                  : location.pathname === link.href
+                // Menu is active on /menu and /menu/*
+                const isActive =
+                  link.href === '/menu'
+                    ? location.pathname === '/menu' || location.pathname.startsWith('/menu/')
+                    : location.pathname === link.href
 
                 return (
                   <li key={link.id}>
-                    <a
-                      href={link.href}
-                      onClick={e => handleLinkClick(e, link)}
-                      className={`navbar__link ${isActive ? 'navbar__link--active' : ''}`}
+                    <NavLink
+                      to={link.href}
+                      className={isActive ? 'navbar__link navbar__link--active' : 'navbar__link'}
                       style={{
                         position: 'relative',
                         fontFamily: 'var(--font-sans)',
@@ -226,7 +160,7 @@ export default function Navbar() {
                       {link.label}
                       {isActive && (
                         <motion.div
-                          layoutId="nav-active-pill"
+                          layoutId="nav-active-underline"
                           style={{
                             position: 'absolute',
                             bottom: '-4px',
@@ -237,7 +171,7 @@ export default function Navbar() {
                           }}
                         />
                       )}
-                    </a>
+                    </NavLink>
                   </li>
                 )
               })}
@@ -300,12 +234,11 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* Desktop Magnet Reserve Button */}
+            {/* Desktop Magnet Reserve Button (links to /contact) */}
             <div className="navbar__desktop-cta" style={{ display: 'flex', alignItems: 'center' }}>
               <Magnet strength={0.25} padding={30}>
-                <a
-                  href="/#visit"
-                  onClick={handleReserveClick}
+                <Link
+                  to="/contact"
                   className="btn btn-primary"
                   id="nav-reserve-btn"
                   style={{
@@ -326,7 +259,7 @@ export default function Navbar() {
                   }}
                 >
                   Reserve a Table
-                </a>
+                </Link>
               </Magnet>
             </div>
 
@@ -411,8 +344,8 @@ export default function Navbar() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    paddingBottom: '20px',
-                    marginBottom: '24px',
+                    paddingBottom: '16px',
+                    marginBottom: '20px',
                     borderBottom: '1px solid rgba(184, 154, 100, 0.14)',
                   }}
                 >
@@ -451,11 +384,11 @@ export default function Navbar() {
                 {/* Staggered Navigation Links */}
                 <nav aria-label="Mobile Navigation Links">
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                    {NAV_LINKS.map((link, index) => {
-                      const isHome = location.pathname === '/'
-                      const isActive = link.isSectionLink
-                        ? isHome && activeSection === link.id
-                        : location.pathname === link.href
+                    {MOBILE_NAV_LINKS.map((link, index) => {
+                      const isActive =
+                        link.href === '/menu'
+                          ? location.pathname === '/menu' || location.pathname.startsWith('/menu/')
+                          : location.pathname === link.href
 
                       return (
                         <motion.li
@@ -465,9 +398,9 @@ export default function Navbar() {
                           transition={{ delay: 0.04 * index, duration: 0.28 }}
                           style={{ marginBottom: '10px' }}
                         >
-                          <a
-                            href={link.href}
-                            onClick={e => handleLinkClick(e, link)}
+                          <Link
+                            to={link.href}
+                            onClick={() => setMobileOpen(false)}
                             style={{
                               fontFamily: 'var(--font-serif)',
                               fontSize: 'clamp(22px, 5vw, 28px)',
@@ -485,7 +418,7 @@ export default function Navbar() {
                           >
                             <span>{link.label}</span>
                             <ArrowUpRight size={20} color="var(--color-brass)" />
-                          </a>
+                          </Link>
                         </motion.li>
                       )
                     })}
@@ -496,14 +429,14 @@ export default function Navbar() {
               {/* Drawer Bottom Area: Call, WhatsApp, Directions, Reserve */}
               <div
                 style={{
-                  paddingTop: '24px',
+                  paddingTop: '20px',
                   borderTop: '1px solid rgba(184, 154, 100, 0.14)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
+                  gap: '10px',
                 }}
               >
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   {/* Call Action */}
                   <a
                     href={`tel:${RESTAURANT.phone.e164}`}
@@ -512,7 +445,7 @@ export default function Navbar() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '6px',
-                      padding: '12px 10px',
+                      padding: '10px 8px',
                       backgroundColor: 'rgba(38, 31, 26, 0.8)',
                       border: '1px solid rgba(184, 154, 100, 0.25)',
                       color: 'var(--color-text-inverse)',
@@ -537,7 +470,7 @@ export default function Navbar() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '6px',
-                      padding: '12px 10px',
+                      padding: '10px 8px',
                       backgroundColor: 'rgba(38, 31, 26, 0.8)',
                       border: '1px solid rgba(184, 154, 100, 0.25)',
                       color: 'var(--color-text-inverse)',
@@ -553,7 +486,7 @@ export default function Navbar() {
                   </a>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   {/* Directions Action */}
                   <a
                     href={RESTAURANT.platforms.googleMaps}
@@ -564,7 +497,7 @@ export default function Navbar() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '6px',
-                      padding: '12px 10px',
+                      padding: '10px 8px',
                       backgroundColor: 'rgba(38, 31, 26, 0.8)',
                       border: '1px solid rgba(184, 154, 100, 0.25)',
                       color: 'var(--color-text-inverse)',
@@ -579,16 +512,16 @@ export default function Navbar() {
                     <span>Directions</span>
                   </a>
 
-                  {/* Reserve Action */}
-                  <a
-                    href="/#visit"
-                    onClick={handleReserveClick}
+                  {/* Reserve Action (Routes to /contact) */}
+                  <Link
+                    to="/contact"
+                    onClick={() => setMobileOpen(false)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '6px',
-                      padding: '12px 10px',
+                      padding: '10px 8px',
                       backgroundColor: 'var(--color-brass)',
                       color: '#1F1A16',
                       borderRadius: '6px',
@@ -601,7 +534,7 @@ export default function Navbar() {
                   >
                     <Calendar size={14} />
                     <span>Reserve</span>
-                  </a>
+                  </Link>
                 </div>
               </div>
             </motion.aside>

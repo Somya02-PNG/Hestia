@@ -119,8 +119,18 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to="/cuisines" style={{ fontSize: '13px', color: 'rgba(246, 239, 228, 0.7)', textDecoration: 'none' }}>
+                  Cuisines & Specialties
+                </Link>
+              </li>
+              <li>
                 <Link to="/menu" style={{ fontSize: '13px', color: 'rgba(246, 239, 228, 0.7)', textDecoration: 'none' }}>
                   Full Menu (193 Dishes)
+                </Link>
+              </li>
+              <li>
+                <Link to="/cart" style={{ fontSize: '13px', color: 'rgba(246, 239, 228, 0.7)', textDecoration: 'none' }}>
+                  Online Ordering Cart
                 </Link>
               </li>
               <li>

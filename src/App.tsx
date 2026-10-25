@@ -4,33 +4,28 @@ import { AnimatePresence } from 'framer-motion'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 import { smoothScroller } from './lib/lenis'
-import ScrollProgressBar from './components/ui/ScrollProgressBar'
-import FloatingActionBar from './components/ui/FloatingActionBar'
-import BlobCursor from './components/reactbits/BlobCursor'
-import ScrollToTop from './components/layout/ScrollToTop'
-
 import Preloader from './components/Preloader'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
+import MainLayout from './layouts/MainLayout'
 
-import HomePage from './pages/HomePage'
-import AboutPage from './pages/AboutPage'
-import MenuPage from './pages/MenuPage'
-import DishDetailPage from './pages/DishDetailPage'
-import GalleryPage from './pages/GalleryPage'
-import ExperiencePage from './pages/ExperiencePage'
-import OffersPage from './pages/OffersPage'
-import ReviewsPage from './pages/ReviewsPage'
-import PartyPage from './pages/PartyPage'
-import ContactPage from './pages/ContactPage'
-import CartPage from './pages/CartPage'
-import CheckoutPage from './pages/CheckoutPage'
-import OrderSuccessPage from './pages/OrderSuccessPage'
-import TermsPage from './pages/TermsPage'
-import PrivacyPage from './pages/PrivacyPage'
-import RefundPolicyPage from './pages/RefundPolicyPage'
-import DeliveryPolicyPage from './pages/DeliveryPolicyPage'
-import NotFoundPage from './pages/NotFoundPage'
+import Home from './pages/Home'
+import About from './pages/About'
+import Cuisines from './pages/Cuisines'
+import Gallery from './pages/Gallery'
+import Experience from './pages/Experience'
+import Menu from './pages/Menu'
+import DishDetail from './pages/DishDetail'
+import Offers from './pages/Offers'
+import Reviews from './pages/Reviews'
+import Party from './pages/Party'
+import Contact from './pages/Contact'
+import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
+import OrderSuccess from './pages/OrderSuccess'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
+import RefundPolicy from './pages/RefundPolicy'
+import DeliveryPolicy from './pages/DeliveryPolicy'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   const [ready, setReady] = useState(false)
@@ -56,16 +51,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* Scroll-to-top and hash navigation sync on route change */}
-      <ScrollToTop />
-
-      {/* Reading Progress Indicator */}
-      <ScrollProgressBar />
-
-      {/* Fluid Cursor Accent (Desktop) */}
-      <BlobCursor />
-
-      {/* Session-cached Curtain Split Preloader */}
+      {/* Session-cached Curtain Split Preloader (< 1.5s) */}
       <AnimatePresence mode="wait">
         {!ready && (
           <Preloader key="preloader" onComplete={onPreloaderComplete} />
@@ -74,42 +60,29 @@ export default function App() {
 
       {/* Main Experience Shell */}
       <div className={ready ? 'site-ready' : 'site-loading'}>
-        <a href="#main-content" className="sr-only" style={{ position: 'absolute', zIndex: 9999 }}>
-          Skip to main content
-        </a>
-
-        {/* Shared Layout: Sticky Header Navigation */}
-        <Navbar />
-
-        {/* Main Content Router */}
-        <main id="main-content">
-          <Routes>
-            <Route path="/" element={<HomePage isReady={ready} />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/menu" element={<MenuPage />} />
-            <Route path="/menu/:slug" element={<DishDetailPage />} />
-            <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/experience" element={<ExperiencePage />} />
-            <Route path="/offers" element={<OffersPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
-            <Route path="/party" element={<PartyPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/order-success" element={<OrderSuccessPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/refund-policy" element={<RefundPolicyPage />} />
-            <Route path="/delivery-policy" element={<DeliveryPolicyPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </main>
-
-        {/* Shared Layout: Footer */}
-        <Footer />
-
-        {/* Shared Layout: Mobile Floating Action Bar */}
-        <FloatingActionBar />
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home isReady={ready} />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/cuisines" element={<Cuisines />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/experience" element={<Experience />} />
+            <Route path="/menu" element={<Menu />} />
+            <Route path="/menu/:slug" element={<DishDetail />} />
+            <Route path="/offers" element={<Offers />} />
+            <Route path="/reviews" element={<Reviews />} />
+            <Route path="/party" element={<Party />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/delivery-policy" element={<DeliveryPolicy />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
       </div>
     </BrowserRouter>
   )
