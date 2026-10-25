@@ -3,6 +3,7 @@ import { ExternalLink, Phone, MessageSquare, Mail, MapPin } from 'lucide-react'
 import ScrollFloat from './reactbits/ScrollFloat'
 import { InstagramIcon } from './icons/InstagramIcon'
 import { RESTAURANT } from '../content/restaurant'
+import BackToTop from './ui/BackToTop'
 
 const YEAR = new Date().getFullYear()
 
@@ -440,6 +441,9 @@ export default function Footer() {
           © {YEAR} Hestiia Restaurant. All rights reserved. · Pure Vegetarian Dining · Shyam Nagar, Kanpur
         </div>
       </div>
+
+      {/* Floating Back to Top button with circular progress ring */}
+      <BackToTop />
     </footer>
   )
 }

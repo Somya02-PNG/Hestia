@@ -1,42 +1,67 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Star, ExternalLink, ArrowRight } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Star, MessageSquare, Quote, ArrowRight, Edit3 } from 'lucide-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { RATINGS } from '../../content/ratings'
-import { REVIEW_PLATFORMS } from '../../content/testimonials'
+import { useMotionMode } from '../../hooks/useMotionMode'
+import CountUp from '../reactbits/CountUp'
+import ClickSpark from '../reactbits/ClickSpark'
+import SectionDivider from '../motion/SectionDivider'
+import HomeGlowBackground from './HomeGlowBackground'
+import './ReviewsTeaser.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
+const GOOGLE_QUOTES = [
+  {
+    id: 'quote-1',
+    text: 'Good food Good service And prices are unmatched.. absolutely pocket friendly .',
+    author: 'Verified Diner',
+    platform: 'Google Reviews',
+    stars: 5,
+  },
+  {
+    id: 'quote-2',
+    text: 'I ordered honey chili potato and schezwan noddle. Pure vegetarian delicacy with authentic touch.',
+    author: 'Kanpur Food Enthusiast',
+    platform: 'Google Reviews',
+    stars: 5,
+  },
+  {
+    id: 'quote-3',
+    text: 'Superb experience with classy Ambience and food, services is rememberable.',
+    author: 'Family Diner',
+    platform: 'Google Reviews',
+    stars: 5,
+  },
+]
+
 export default function ReviewsTeaser() {
   const scoredRatings = RATINGS.filter(r => r.score !== null)
+  const { isDesktop, reduced } = useMotionMode()
+
   const sectionRef = useRef<HTMLElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
-  const scoreBarRef = useRef<HTMLDivElement>(null)
-  const quotesRef = useRef<HTMLDivElement>(null)
+  const scoreGridRef = useRef<HTMLDivElement>(null)
+  const marqueeTrackRef = useRef<HTMLDivElement>(null)
+  const mobileCarouselRef = useRef<HTMLDivElement>(null)
+
+  const [touchedMobile, setTouchedMobile] = useState(false)
+  const [mobileActiveIdx, setMobileActiveIdx] = useState(0)
+
+  // Duplicated quotes for seamless infinite marquee loop
+  const marqueeQuotes = [...GOOGLE_QUOTES, ...GOOGLE_QUOTES, ...GOOGLE_QUOTES]
+
+  const googleWriteReviewUrl = 'https://search.google.com/local/writereview?placeid=ChIJXQe5b0X_vDsR3bK2mCq0PBI'
 
   useEffect(() => {
-    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced) return
+
     const ctx = gsap.context(() => {
-      if (isReduced) {
-        gsap.from([headerRef.current, scoreBarRef.current, quotesRef.current ? quotesRef.current.children : []], {
-          opacity: 0,
-          duration: 0.6,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 85%',
-          },
-        })
-        return
-      }
-
-      const mm = gsap.matchMedia()
-
-      // Desktop
-      mm.add('(min-width: 1024px)', () => {
-        gsap.from(headerRef.current ? headerRef.current.children : [], {
+      // Header entrance
+      if (headerRef.current) {
+        gsap.from(headerRef.current.children, {
           opacity: 0,
           y: 20,
           duration: 0.8,
@@ -44,117 +69,106 @@ export default function ReviewsTeaser() {
           ease: 'power3.out',
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: 'top 80%',
+            start: 'top 82%',
           },
         })
+      }
 
-        if (scoreBarRef.current) {
-          gsap.from(scoreBarRef.current.children, {
-            opacity: 0,
-            y: 16,
-            duration: 0.75,
-            stagger: 0.08,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: scoreBarRef.current,
-              start: 'top 85%',
-            },
-          })
-        }
+      // Star icons fill left to right in sequence
+      if (scoreGridRef.current) {
+        const starSequences = scoreGridRef.current.querySelectorAll('.reviews-stars-seq')
+        starSequences.forEach(seq => {
+          const stars = seq.querySelectorAll('.reviews-star-icon')
+          gsap.fromTo(
+            stars,
+            { scale: 0, opacity: 0 },
+            {
+              scale: 1,
+              opacity: 1,
+              duration: 0.4,
+              stagger: 0.08,
+              ease: 'back.out(2)',
+              scrollTrigger: {
+                trigger: seq,
+                start: 'top 88%',
+                once: true,
+              },
+            }
+          )
+        })
+      }
 
-        if (quotesRef.current) {
-          const cards = Array.from(quotesRef.current.children)
-          ScrollTrigger.batch(cards, {
+      // Infinite slow marquee on desktop (pause on hover/touch)
+      if (marqueeTrackRef.current) {
+        const tween = gsap.to(marqueeTrackRef.current, {
+          xPercent: -33.333,
+          repeat: -1,
+          duration: 32,
+          ease: 'none',
+        })
+
+        const el = marqueeTrackRef.current
+        const pause = () => tween.pause()
+        const resume = () => tween.resume()
+
+        el.addEventListener('mouseenter', pause)
+        el.addEventListener('mouseleave', resume)
+        el.addEventListener('touchstart', pause, { passive: true })
+        el.addEventListener('touchend', resume)
+
+        // Quote marks scale in
+        const quoteIcons = el.querySelectorAll('.reviews-quote-icon')
+        gsap.from(quoteIcons, {
+          scale: 0,
+          rotate: -20,
+          duration: 0.6,
+          stagger: 0.1,
+          ease: 'back.out(1.8)',
+          scrollTrigger: {
+            trigger: marqueeTrackRef.current,
             start: 'top 85%',
             once: true,
-            onEnter: batch => {
-              gsap.from(batch, {
-                opacity: 0,
-                y: 30,
-                duration: 0.8,
-                stagger: 0.12,
-                ease: 'power3.out',
-                overwrite: true,
-              })
-            },
-          })
-        }
-      })
-
-      // Mobile
-      mm.add('(max-width: 1023px)', () => {
-        gsap.from(headerRef.current, {
-          opacity: 0,
-          y: 16,
-          duration: 0.6,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 88%',
           },
         })
-
-        if (scoreBarRef.current) {
-          gsap.from(scoreBarRef.current.children, {
-            opacity: 0,
-            y: 12,
-            duration: 0.6,
-            stagger: 0.06,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: scoreBarRef.current,
-              start: 'top 90%',
-            },
-          })
-        }
-
-        if (quotesRef.current) {
-          const cards = Array.from(quotesRef.current.children)
-          ScrollTrigger.batch(cards, {
-            start: 'top 90%',
-            once: true,
-            onEnter: batch => {
-              gsap.from(batch, {
-                opacity: 0,
-                y: 18,
-                duration: 0.65,
-                stagger: 0.08,
-                ease: 'power3.out',
-                overwrite: true,
-              })
-            },
-          })
-        }
-      })
+      }
     }, sectionRef)
 
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
+
+  // Mobile auto-advance every 5s that stops after first user touch
+  useEffect(() => {
+    if (touchedMobile || isDesktop) return
+
+    const timer = setInterval(() => {
+      setMobileActiveIdx(prev => {
+        const next = (prev + 1) % GOOGLE_QUOTES.length
+        if (mobileCarouselRef.current) {
+          const cardWidth = mobileCarouselRef.current.clientWidth * 0.86 + 16
+          mobileCarouselRef.current.scrollTo({
+            left: next * cardWidth,
+            behavior: 'smooth',
+          })
+        }
+        return next
+      })
+    }, 5000)
+
+    return () => clearInterval(timer)
+  }, [touchedMobile, isDesktop])
 
   return (
     <section
       ref={sectionRef}
       className="reviews-teaser section section-dark"
-      style={{
-        padding: 'clamp(56px, 8vw, 88px) 0',
-        backgroundColor: '#191410',
-        borderTop: '1px solid rgba(184, 154, 100, 0.12)',
-        overflow: 'hidden',
-      }}
+      aria-label="Verified Diner Impressions"
     >
-      <div className="container">
+      <SectionDivider width="90%" />
+      <HomeGlowBackground top="30%" left="65%" size="650px" />
+
+      <div className="container" style={{ marginTop: '24px' }}>
         {/* Header */}
-        <div
-          ref={headerRef}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            flexWrap: 'wrap',
-            gap: '20px',
-            marginBottom: '40px',
-          }}
-        >
+        <div ref={headerRef} className="reviews-header">
           <div>
             <span
               style={{
@@ -163,193 +177,238 @@ export default function ReviewsTeaser() {
                 fontWeight: 600,
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
-                color: 'var(--color-brass)',
-                display: 'block',
+                color: 'var(--color-brass, #B89A64)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
                 marginBottom: '10px',
               }}
             >
-              Public Social Proof
+              <MessageSquare size={12} color="var(--color-brass, #B89A64)" />
+              Guest Impressions
             </span>
             <h2
               style={{
                 fontFamily: 'var(--font-serif)',
                 fontSize: 'clamp(28px, 4vw, 42px)',
                 fontWeight: 300,
-                color: 'var(--color-text-inverse)',
+                color: 'var(--color-text-inverse, #F6EFE4)',
                 margin: 0,
                 lineHeight: 1.2,
               }}
             >
-              Verified Diner Impressions.
+              Stories Shared at the Table.
             </h2>
           </div>
 
-          <motion.div
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Link
-              to="/reviews"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: 'var(--color-brass)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-              }}
-            >
-              <span>Read All Reviews</span>
-              <ArrowRight size={14} />
-            </Link>
-          </motion.div>
+          {/* Action buttons with ClickSpark */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <ClickSpark sparkColor="var(--color-brass, #B89A64)">
+              <a
+                href={googleWriteReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 16px',
+                  borderRadius: '4px',
+                  backgroundColor: 'rgba(184, 154, 100, 0.15)',
+                  border: '1px solid rgba(184, 154, 100, 0.35)',
+                  color: 'var(--color-brass, #B89A64)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  textDecoration: 'none',
+                }}
+              >
+                <Edit3 size={13} />
+                <span>Write a Review</span>
+              </a>
+            </ClickSpark>
+
+            <ClickSpark sparkColor="var(--color-brass, #B89A64)">
+              <Link
+                to="/reviews"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 18px',
+                  borderRadius: '4px',
+                  backgroundColor: 'var(--color-brass, #B89A64)',
+                  color: '#1F1A16',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  textDecoration: 'none',
+                }}
+              >
+                <span>Read All</span>
+                <ArrowRight size={13} />
+              </Link>
+            </ClickSpark>
+          </div>
         </div>
 
-        {/* Platform Scores Bar */}
-        <div
-          ref={scoreBarRef}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px',
-            marginBottom: '32px',
-          }}
-        >
+        {/* Scores Grid: CountUp numbers + Sequenced Star Fills */}
+        <div ref={scoreGridRef} className="reviews-score-grid">
           {scoredRatings.map(item => (
-            <motion.div
-              key={item.platform}
-              whileHover={{ y: -3, transition: { duration: 0.2 } }}
-              style={{
-                padding: '18px 22px',
-                borderRadius: '8px',
-                backgroundColor: 'rgba(38, 31, 26, 0.65)',
-                border: '1px solid rgba(184, 154, 100, 0.16)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div key={item.platform} className="reviews-score-card">
               <div>
-                <span style={{ display: 'block', fontSize: '12px', color: 'rgba(246, 239, 228, 0.65)', fontFamily: 'var(--font-sans)' }}>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    color: 'rgba(246, 239, 228, 0.68)',
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                >
                   {item.platform}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
-                  <span style={{ fontSize: '22px', fontWeight: 700, color: 'var(--color-brass)' }}>
-                    {item.score?.toFixed(1)}
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '3px' }}>
+                  <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-brass, #B89A64)' }}>
+                    <CountUp to={item.score!} decimals={1} duration={1.8} />
                   </span>
                   <span style={{ fontSize: '12px', color: 'rgba(246, 239, 228, 0.5)' }}>
                     / {item.outOf}
                   </span>
                 </div>
+
+                {/* Stars sequenced fill left-to-right via GSAP */}
+                <div className="reviews-stars-seq" aria-label={`${item.score} out of 5 stars`}>
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={13}
+                      className="reviews-star-icon"
+                      fill={i < Math.floor(item.score!) ? 'var(--color-brass, #B89A64)' : 'transparent'}
+                      stroke="var(--color-brass, #B89A64)"
+                    />
+                  ))}
+                </div>
               </div>
+
               {item.count && (
-                <span style={{ fontSize: '11px', color: 'rgba(184, 154, 100, 0.85)', textAlign: 'right' }}>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: 'rgba(184, 154, 100, 0.85)',
+                    textAlign: 'right',
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                >
                   {item.count.toLocaleString()} {item.countLabel || 'ratings'}
                 </span>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
+      </div>
 
-        {/* 3 Review / Discovery Cards from verified platforms with Framer Motion hover */}
-        <div
-          ref={quotesRef}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '24px',
-          }}
-        >
-          {REVIEW_PLATFORMS.map(platform => (
-            <motion.div
-              key={platform.id}
-              whileHover={{ y: -6, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
-              whileTap={{ scale: 0.98 }}
-              style={{ display: 'flex' }}
-            >
-              <a
-                href={platform.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  backgroundColor: 'rgba(38, 31, 26, 0.75)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(184, 154, 100, 0.18)',
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  textDecoration: 'none',
-                  width: '100%',
-                  transition: 'border-color 0.25s, box-shadow 0.25s',
-                }}
-                className="review-quote-card"
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.45)'
-                  e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.5)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.18)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', color: 'var(--color-brass)' }}>
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={14} fill="var(--color-brass)" stroke="var(--color-brass)" />
-                      ))}
-                    </div>
-                    <ExternalLink size={14} color="var(--color-brass)" />
-                  </div>
+      {/* Desktop 3 Google quote cards in an infinite slow marquee */}
+      <div className="reviews-marquee-viewport">
+        <div ref={marqueeTrackRef} className="reviews-marquee-track">
+          {marqueeQuotes.map((q, idx) => (
+            <div key={`${q.id}-${idx}`} className="reviews-quote-card">
+              <Quote className="reviews-quote-icon" />
 
-                  <h3
-                    style={{
-                      fontFamily: 'var(--font-serif)',
-                      fontSize: '20px',
-                      color: 'var(--color-text-inverse)',
-                      margin: '0 0 8px 0',
-                    }}
-                  >
-                    {platform.name}
-                  </h3>
+              <p className="reviews-quote-text">
+                "{q.text}"
+              </p>
 
-                  <p
-                    style={{
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '13px',
-                      lineHeight: 1.6,
-                      color: 'rgba(246, 239, 228, 0.7)',
-                      margin: 0,
-                    }}
-                  >
-                    "{platform.note}"
-                  </p>
-                </div>
-
-                <div style={{ marginTop: '20px', paddingTop: '12px', borderTop: '1px solid rgba(184, 154, 100, 0.12)' }}>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontFamily: 'var(--font-sans)',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: 'var(--color-brass)',
-                    }}
-                  >
-                    Read Verified Reviews →
-                  </span>
-                </div>
-              </a>
-            </motion.div>
+              <div className="reviews-quote-footer">
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-sans)',
+                    color: 'var(--color-text-inverse, #F6EFE4)',
+                  }}
+                >
+                  {q.author}
+                </span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--color-brass, #B89A64)',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {q.platform}
+                </span>
+              </div>
+            </div>
           ))}
         </div>
+      </div>
+
+      {/* Mobile Swipe Snap Cards with auto-advance every 5s */}
+      <div
+        ref={mobileCarouselRef}
+        className="reviews-mobile-carousel"
+        onTouchStart={() => setTouchedMobile(true)}
+      >
+        {GOOGLE_QUOTES.map(q => (
+          <div key={q.id} className="reviews-mobile-quote-wrap">
+            <div className="reviews-quote-card" style={{ width: '100%' }}>
+              <Quote className="reviews-quote-icon" />
+
+              <p className="reviews-quote-text" style={{ fontSize: '15px' }}>
+                "{q.text}"
+              </p>
+
+              <div className="reviews-quote-footer">
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-sans)',
+                    color: 'var(--color-text-inverse, #F6EFE4)',
+                  }}
+                >
+                  {q.author}
+                </span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--color-brass, #B89A64)',
+                  }}
+                >
+                  {q.platform}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Dot Indicators */}
+      <div
+        style={{
+          display: isDesktop ? 'none' : 'flex',
+          justifyContent: 'center',
+          gap: '6px',
+          marginTop: '12px',
+        }}
+        aria-hidden="true"
+      >
+        {GOOGLE_QUOTES.map((q, idx) => (
+          <div
+            key={q.id}
+            style={{
+              width: idx === mobileActiveIdx ? '18px' : '6px',
+              height: '6px',
+              borderRadius: '3px',
+              backgroundColor: idx === mobileActiveIdx ? 'var(--color-brass, #B89A64)' : 'rgba(184, 154, 100, 0.25)',
+              transition: 'all 0.3s ease',
+            }}
+          />
+        ))}
       </div>
     </section>
   )

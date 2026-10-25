@@ -1,0 +1,85 @@
+/* OffersBand Styles */
+.offers-band {
+  margin: 24px 0;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 2px; /* padding for the conic gradient border */
+  background: #1C1713;
+}
+
+/* Animated slow conic gradient border */
+.offers-conic-border {
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(184, 154, 100, 0.6) 25%,
+    rgba(245, 208, 97, 0.8) 50%,
+    rgba(184, 154, 100, 0.6) 75%,
+    transparent 100%
+  );
+  animation: conicSpin 12s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes conicSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.offers-band-inner {
+  position: relative;
+  background-color: #211A15;
+  border-radius: 12px;
+  padding: 22px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  z-index: 2;
+}
+
+/* Coupon code pill with copy micro-animation */
+.offers-coupon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(184, 154, 100, 0.15);
+  border: 1px dashed var(--color-brass, #B89A64);
+  color: var(--color-brass, #B89A64);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.offers-coupon-btn:hover {
+  background: rgba(184, 154, 100, 0.25);
+}
+
+.offers-circular-badge {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .offers-band-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .offers-circular-badge {
+    display: none;
+  }
+}

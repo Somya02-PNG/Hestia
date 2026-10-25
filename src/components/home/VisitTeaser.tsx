@@ -1,39 +1,52 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Clock, Phone, MessageSquare, Navigation, Calendar, ArrowRight } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { MapPin, Clock, Phone, MessageSquare, Navigation, Calendar } from 'lucide-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { RESTAURANT } from '../../content/restaurant'
+import { useMotionMode } from '../../hooks/useMotionMode'
+import Magnet from '../reactbits/Magnet'
+import TapScale from '../motion/TapScale'
+import SectionDivider from '../motion/SectionDivider'
+import HomeGlowBackground from './HomeGlowBackground'
+import './VisitTeaser.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
 export default function VisitTeaser() {
+  const { isDesktop, reduced } = useMotionMode()
   const sectionRef = useRef<HTMLElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+  const pinRef = useRef<HTMLDivElement>(null)
+  const addressLinesRef = useRef<HTMLDivElement>(null)
 
+  const [isOpenNow, setIsOpenNow] = useState(false)
+
+  // Compute live Open / Closed status from RESTAURANT.hours (11:00 to 23:00 daily IST)
   useEffect(() => {
-    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const checkOpenStatus = () => {
+      const now = new Date()
+      // IST is UTC+5:30
+      const utcTime = now.getTime() + now.getTimezoneOffset() * 60000
+      const istTime = new Date(utcTime + 5.5 * 3600000)
+      const currentHour = istTime.getHours()
+      setIsOpenNow(currentHour >= 11 && currentHour < 23)
+    }
+
+    checkOpenStatus()
+    const interval = setInterval(checkOpenStatus, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // GSAP card slide-up + clip reveal, map-pin bounce drop, address lines stagger
+  useEffect(() => {
+    if (reduced) return
+
     const ctx = gsap.context(() => {
-      if (isReduced) {
-        gsap.from([headerRef.current, cardRef.current], {
-          opacity: 0,
-          duration: 0.6,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 85%',
-          },
-        })
-        return
-      }
-
-      const mm = gsap.matchMedia()
-
-      // Desktop
-      mm.add('(min-width: 1024px)', () => {
-        gsap.from(headerRef.current ? headerRef.current.children : [], {
+      // Header entrance
+      if (headerRef.current) {
+        gsap.from(headerRef.current.children, {
           opacity: 0,
           y: 20,
           duration: 0.8,
@@ -41,313 +54,236 @@ export default function VisitTeaser() {
           ease: 'power3.out',
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: 'top 80%',
-          },
-        })
-
-        gsap.from(cardRef.current, {
-          opacity: 0,
-          y: 32,
-          duration: 0.85,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: cardRef.current,
             start: 'top 85%',
           },
         })
-      })
+      }
 
-      // Mobile
-      mm.add('(max-width: 1023px)', () => {
-        gsap.from(headerRef.current, {
+      // Card slide up with clip reveal
+      if (cardRef.current) {
+        gsap.fromTo(
+          cardRef.current,
+          {
+            opacity: 0,
+            y: 40,
+            clipPath: 'inset(20% 0% 0% 0%)',
+          },
+          {
+            opacity: 1,
+            y: 0,
+            clipPath: 'inset(0% 0% 0% 0%)',
+            duration: 0.9,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: cardRef.current,
+              start: 'top 86%',
+            },
+          }
+        )
+      }
+
+      // Map pin drops and settles with bounce
+      if (pinRef.current) {
+        gsap.from(pinRef.current, {
+          y: -36,
           opacity: 0,
-          y: 16,
-          duration: 0.6,
-          ease: 'power3.out',
+          duration: 0.9,
+          ease: 'bounce.out',
           scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 88%',
+            trigger: cardRef.current,
+            start: 'top 82%',
           },
         })
+      }
 
-        gsap.from(cardRef.current, {
+      // Address lines stagger in
+      if (addressLinesRef.current) {
+        gsap.from(addressLinesRef.current.children, {
           opacity: 0,
-          y: 20,
-          duration: 0.65,
+          y: 14,
+          duration: 0.7,
+          stagger: 0.08,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: cardRef.current,
-            start: 'top 88%',
+            start: 'top 80%',
           },
         })
-      })
+      }
     }, sectionRef)
 
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
+
+  // Wrap buttons with Magnet on desktop, TapScale on mobile
+  const renderActionButton = (content: React.ReactNode) => {
+    if (isDesktop) {
+      return (
+        <Magnet strength={0.25} padding={25}>
+          {content}
+        </Magnet>
+      )
+    }
+
+    return (
+      <TapScale tapScale={0.97} liftOnHover={false}>
+        {content}
+      </TapScale>
+    )
+  }
 
   return (
     <section
       ref={sectionRef}
       className="visit-teaser section section-dark"
-      style={{
-        padding: 'clamp(56px, 8vw, 88px) 0',
-        backgroundColor: '#1F1A16',
-        borderTop: '1px solid rgba(184, 154, 100, 0.12)',
-        overflow: 'hidden',
-      }}
+      aria-label="Visit Hestiia Restaurant"
     >
-      <div className="container">
-        {/* Header */}
-        <div
-          ref={headerRef}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            flexWrap: 'wrap',
-            gap: '20px',
-            marginBottom: '36px',
-          }}
-        >
-          <div>
-            <span
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                color: 'var(--color-brass)',
-                display: 'block',
-                marginBottom: '10px',
-              }}
-            >
-              Sanctuary Location
-            </span>
-            <h2
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 'clamp(28px, 4vw, 42px)',
-                fontWeight: 300,
-                color: 'var(--color-text-inverse)',
-                margin: 0,
-                lineHeight: 1.2,
-              }}
-            >
-              Join Us in Shyam Nagar.
-            </h2>
-          </div>
+      <SectionDivider width="90%" />
+      <HomeGlowBackground top="35%" left="50%" size="700px" />
 
-          <motion.div
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      <div className="container" style={{ marginTop: '24px' }}>
+        {/* Header */}
+        <div ref={headerRef} className="visit-header">
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--color-brass, #B89A64)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginBottom: '10px',
+            }}
           >
-            <Link
-              to="/contact"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: 'var(--color-brass)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-              }}
-            >
-              <span>Full Location & Booking</span>
-              <ArrowRight size={14} />
-            </Link>
-          </motion.div>
+            <MapPin size={12} color="var(--color-brass, #B89A64)" />
+            Visit Our Sanctuary
+          </span>
+          <h2
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 'clamp(28px, 4vw, 42px)',
+              fontWeight: 300,
+              color: 'var(--color-text-inverse, #F6EFE4)',
+              margin: '0 0 12px 0',
+              lineHeight: 1.2,
+            }}
+          >
+            A Table Awaits You in Shyam Nagar.
+          </h2>
+          <p
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              color: 'rgba(246, 239, 228, 0.72)',
+              margin: 0,
+            }}
+          >
+            Conveniently situated in Kanpur with valet assistance, peaceful family seating, and warm North Indian hospitality.
+          </p>
         </div>
 
-        {/* Small Static Card */}
-        <div
-          ref={cardRef}
-          style={{
-            backgroundColor: 'rgba(38, 31, 26, 0.75)',
-            borderRadius: '12px',
-            border: '1px solid rgba(184, 154, 100, 0.22)',
-            padding: 'clamp(24px, 4vw, 36px)',
-            maxWidth: '920px',
-            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '28px',
-              marginBottom: '32px',
-            }}
-          >
-            {/* Address */}
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(184, 154, 100, 0.12)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <MapPin size={18} color="var(--color-brass)" />
-              </div>
-              <div>
-                <strong style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-inverse)', marginBottom: '4px' }}>
-                  Sanctuary Address
-                </strong>
-                <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.6, color: 'rgba(246, 239, 228, 0.75)' }}>
-                  {RESTAURANT.address.fullDisplay}
-                </p>
-              </div>
+        {/* Main Visit Card with Clip Reveal */}
+        <div ref={cardRef} className="visit-main-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            {/* Left: Decorative Map Pin that drops and settles */}
+            <div ref={pinRef} className="visit-pin-icon-wrap" aria-hidden="true">
+              <MapPin size={22} />
             </div>
 
-            {/* Hours & Dining */}
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(184, 154, 100, 0.12)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Clock size={18} color="var(--color-brass)" />
-              </div>
-              <div>
-                <strong style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-inverse)', marginBottom: '4px' }}>
-                  Dining Hours
-                </strong>
-                <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.6, color: 'rgba(246, 239, 228, 0.75)' }}>
-                  {RESTAURANT.hours.displayText}
-                </p>
-                <span style={{ fontSize: '11px', color: 'var(--color-brass-light)' }}>
-                  {RESTAURANT.priceRange}
-                </span>
-              </div>
+            {/* Right: Live Open / Closed Status Badge with Pulsing Dot */}
+            <div className={`visit-status-badge ${isOpenNow ? 'open' : 'closed'}`}>
+              <span className={`visit-status-dot ${isOpenNow ? 'pulse-green' : 'pulse-gold'}`} />
+              <span>{isOpenNow ? 'Open Now (11:00 - 23:00)' : 'Opens at 11:00 AM Daily'}</span>
             </div>
           </div>
 
-          {/* Action Row: Call, WhatsApp, Directions, Reserve a Table with Framer Motion tap */}
-          <div
-            style={{
-              paddingTop: '24px',
-              borderTop: '1px solid rgba(184, 154, 100, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}>
-              <Link
-                to="/contact"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '12px 22px',
-                  backgroundColor: 'var(--color-brass)',
-                  color: '#1F1A16',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-sans)',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                }}
-              >
-                <Calendar size={14} />
-                <span>Reserve a Table</span>
-              </Link>
-            </motion.div>
+          {/* Staggered Address and Timing Details */}
+          <div ref={addressLinesRef} style={{ marginTop: '8px' }}>
+            <h3
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '26px',
+                color: 'var(--color-text-inverse, #F6EFE4)',
+                margin: '0 0 8px 0',
+                fontWeight: 300,
+              }}
+            >
+              {RESTAURANT.name}
+            </h3>
 
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
+            <p
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '15px',
+                lineHeight: 1.6,
+                color: 'rgba(246, 239, 228, 0.85)',
+                margin: '0 0 8px 0',
+              }}
+            >
+              {RESTAURANT.address.fullDisplay}
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(246, 239, 228, 0.65)', fontSize: '13px' }}>
+              <Clock size={14} color="var(--color-brass, #B89A64)" />
+              <span>{RESTAURANT.hours.displayText}</span>
+              <span>·</span>
+              <span>{RESTAURANT.priceRange}</span>
+            </div>
+          </div>
+
+          {/* Action Buttons with Magnet / TapScale and Icon Wiggle */}
+          <div className="visit-actions-grid">
+            {renderActionButton(
               <a
                 href={`tel:${RESTAURANT.phone.e164}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '12px 18px',
-                  backgroundColor: 'rgba(38, 31, 26, 0.8)',
-                  border: '1px solid rgba(184, 154, 100, 0.25)',
-                  color: 'var(--color-text-inverse)',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-sans)',
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                }}
+                className="visit-action-btn primary"
+                aria-label={`Call ${RESTAURANT.phone.display}`}
               >
-                <Phone size={14} color="var(--color-brass)" />
-                <span>Call {RESTAURANT.phone.display}</span>
+                <Phone size={14} className="visit-btn-icon" />
+                <span>Call Now</span>
               </a>
-            </motion.div>
+            )}
 
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
+            {renderActionButton(
               <a
                 href={RESTAURANT.whatsapp.chatUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '12px 18px',
-                  backgroundColor: 'rgba(38, 31, 26, 0.8)',
-                  border: '1px solid rgba(184, 154, 100, 0.25)',
-                  color: 'var(--color-text-inverse)',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-sans)',
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                }}
+                className="visit-action-btn outline"
+                aria-label="Chat on WhatsApp"
               >
-                <MessageSquare size={14} color="#25D366" />
+                <MessageSquare size={14} className="visit-btn-icon" />
                 <span>WhatsApp</span>
               </a>
-            </motion.div>
+            )}
 
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
+            {renderActionButton(
               <a
                 href={RESTAURANT.platforms.googleMaps}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '12px 18px',
-                  backgroundColor: 'rgba(38, 31, 26, 0.8)',
-                  border: '1px solid rgba(184, 154, 100, 0.25)',
-                  color: 'var(--color-text-inverse)',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-sans)',
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                }}
+                className="visit-action-btn outline"
+                aria-label="Get Directions on Google Maps"
               >
-                <Navigation size={14} color="var(--color-brass)" />
+                <Navigation size={14} className="visit-btn-icon" />
                 <span>Directions</span>
               </a>
-            </motion.div>
+            )}
+
+            {renderActionButton(
+              <Link
+                to="/contact"
+                className="visit-action-btn outline"
+                aria-label="Plan your visit and reserve a table"
+              >
+                <Calendar size={14} className="visit-btn-icon" />
+                <span>Reserve</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
