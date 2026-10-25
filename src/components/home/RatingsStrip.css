@@ -1,0 +1,185 @@
+/* RatingsStrip Styles */
+.ratings-strip {
+  background-color: #17120E;
+  border-top: 1px solid rgba(184, 154, 100, 0.15);
+  border-bottom: 1px solid rgba(184, 154, 100, 0.15);
+  padding: 16px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.ratings-strip-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+/* Badges section */
+.ratings-badges {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.ratings-badge-veg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ratings-badge-veg span {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-veg, #4ADE80);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ratings-badge-divider {
+  width: 1px;
+  height: 14px;
+  background-color: rgba(184, 154, 100, 0.25);
+}
+
+.ratings-badge-location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ratings-badge-location span {
+  font-size: 12px;
+  color: rgba(246, 239, 228, 0.7);
+  font-family: var(--font-sans);
+}
+
+/* Desktop cards row */
+.ratings-cards-desktop {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Individual Rating Card */
+.rating-item-card {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(38, 31, 26, 0.4);
+  border: 1px solid rgba(184, 154, 100, 0.12);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.rating-item-card:hover {
+  background-color: rgba(38, 31, 26, 0.75);
+  border-color: rgba(184, 154, 100, 0.35);
+  transform: translateY(-2px);
+}
+
+/* Hover Gold Underline Slide */
+.rating-item-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-brass, #B89A64), transparent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rating-item-card:hover .rating-item-underline {
+  transform: scaleX(1);
+}
+
+/* Score display */
+.rating-score-val {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-inverse, #F6EFE4);
+}
+
+.rating-score-out {
+  font-size: 11px;
+  color: rgba(246, 239, 228, 0.5);
+  margin-left: -2px;
+}
+
+.rating-count {
+  font-size: 11px;
+  color: rgba(184, 154, 100, 0.85);
+  font-family: var(--font-sans);
+}
+
+/* Null score view-rating button */
+.rating-view-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-brass, #B89A64);
+  text-transform: uppercase;
+}
+
+.rating-arrow-nudge {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rating-item-card:hover .rating-arrow-nudge {
+  transform: translate(2px, -2px);
+}
+
+/* Mobile snap row */
+.ratings-cards-mobile {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .ratings-strip-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .ratings-badges {
+    justify-content: center;
+  }
+
+  .ratings-cards-desktop {
+    display: none;
+  }
+
+  .ratings-cards-mobile {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 16px 12px 16px;
+    margin: 0 -16px;
+    scrollbar-width: none;
+  }
+
+  .ratings-cards-mobile::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ratings-mobile-item-wrap {
+    scroll-snap-align: center;
+    flex: 0 0 auto;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  }
+}

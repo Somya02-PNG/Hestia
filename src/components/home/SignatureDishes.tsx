@@ -1,131 +1,206 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight, Sparkles, Plus } from 'lucide-react'
 import { motion } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { POPULAR_DISHES, MENU_CATEGORIES } from '../../content/menu'
+import { POPULAR_DISHES, MENU_CATEGORIES, type Dish } from '../../content/menu'
+import { useMotionMode } from '../../hooks/useMotionMode'
+import Magnet from '../reactbits/Magnet'
+import ClickSpark from '../reactbits/ClickSpark'
+import TapScale from '../motion/TapScale'
+import ShinyText from '../reactbits/ShinyText'
+import GradientText from '../reactbits/GradientText'
+import './SignatureDishes.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
 export default function SignatureDishes() {
   const featuredDishes = POPULAR_DISHES.slice(0, 6)
+  const { isDesktop, reduced } = useMotionMode()
+
   const sectionRef = useRef<HTMLElement>(null)
-  const headerRef = useRef<HTMLDivElement>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
+  const pinWrapperRef = useRef<HTMLDivElement>(null)
+  const cardsTrackRef = useRef<HTMLDivElement>(null)
+  const progressLineRef = useRef<HTMLDivElement>(null)
 
+  const mobileCarouselRef = useRef<HTMLDivElement>(null)
+  const [activeMobileIdx, setActiveMobileIdx] = useState(0)
+
+  // GSAP Desktop Horizontal Pin with ScrollTrigger
   useEffect(() => {
-    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const ctx = gsap.context(() => {
-      if (isReduced) {
-        gsap.from([headerRef.current, gridRef.current ? gridRef.current.children : []], {
-          opacity: 0,
-          duration: 0.6,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 85%',
-          },
-        })
-        return
-      }
+    if (reduced) return
 
+    const ctx = gsap.context(() => {
       const mm = gsap.matchMedia()
 
-      // Desktop
       mm.add('(min-width: 1024px)', () => {
-        gsap.from(headerRef.current ? headerRef.current.children : [], {
-          opacity: 0,
-          y: 20,
-          duration: 0.8,
-          stagger: 0.1,
-          ease: 'power3.out',
+        if (!cardsTrackRef.current || !sectionRef.current || !pinWrapperRef.current) return
+
+        const track = cardsTrackRef.current
+        const viewport = track.parentElement
+
+        if (!viewport) return
+
+        // Calculate horizontal translation distance
+        const scrollDistance = () => track.scrollWidth - viewport.clientWidth + 80
+
+        const horizontalTween = gsap.to(track, {
+          x: () => -scrollDistance(),
+          ease: 'none',
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: 'top 80%',
+            start: 'top top',
+            end: () => `+=${scrollDistance() * 1.2}`,
+            pin: pinWrapperRef.current,
+            scrub: 1,
+            invalidateOnRefresh: true,
+            onUpdate: self => {
+              if (progressLineRef.current) {
+                progressLineRef.current.style.transform = `scaleX(${self.progress})`
+              }
+            },
           },
         })
 
-        if (gridRef.current) {
-          const cards = Array.from(gridRef.current.children)
-          ScrollTrigger.batch(cards, {
-            start: 'top 85%',
-            once: true,
-            onEnter: batch => {
-              gsap.from(batch, {
-                opacity: 0,
-                y: 28,
-                duration: 0.8,
-                stagger: 0.1,
-                ease: 'power3.out',
-                overwrite: true,
-              })
-            },
-          })
-        }
-      })
-
-      // Mobile
-      mm.add('(max-width: 1023px)', () => {
-        gsap.from(headerRef.current, {
-          opacity: 0,
-          y: 16,
-          duration: 0.6,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 88%',
-          },
+        // Inner image parallax inside each card scrubbed during horizontal slide
+        const cards = track.querySelectorAll('.dish-card')
+        cards.forEach(card => {
+          const img = card.querySelector('.dish-parallax-img')
+          if (img) {
+            gsap.fromTo(
+              img,
+              { x: '6%' },
+              {
+                x: '-6%',
+                ease: 'none',
+                scrollTrigger: {
+                  trigger: card,
+                  containerAnimation: horizontalTween,
+                  start: 'left right',
+                  end: 'right left',
+                  scrub: true,
+                },
+              }
+            )
+          }
         })
-
-        if (gridRef.current) {
-          const cards = Array.from(gridRef.current.children)
-          ScrollTrigger.batch(cards, {
-            start: 'top 90%',
-            once: true,
-            onEnter: batch => {
-              gsap.from(batch, {
-                opacity: 0,
-                y: 18,
-                duration: 0.6,
-                stagger: 0.08,
-                ease: 'power3.out',
-                overwrite: true,
-              })
-            },
-          })
-        }
       })
     }, sectionRef)
 
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
+
+  // Mobile scroll-snap centered card tracking
+  const handleMobileScroll = () => {
+    const container = mobileCarouselRef.current
+    if (!container) return
+
+    const containerCenter = container.getBoundingClientRect().left + container.clientWidth / 2
+    const children = Array.from(container.children) as HTMLElement[]
+
+    let closestIdx = 0
+    let minDistance = Infinity
+
+    children.forEach((child, idx) => {
+      const childRect = child.getBoundingClientRect()
+      const childCenter = childRect.left + childRect.width / 2
+      const distance = Math.abs(containerCenter - childCenter)
+
+      if (distance < minDistance) {
+        minDistance = distance
+        closestIdx = idx
+      }
+    })
+
+    setActiveMobileIdx(closestIdx)
+  }
+
+  // Dish Card Inner Component
+  const renderDishCard = (dish: Dish) => {
+    const category = MENU_CATEGORIES.find(c => c.id === dish.categoryId)
+    const imgSrc = dish.image?.srcSmall || category?.fallbackImage.srcSmall || ''
+    const imgAlt = dish.image?.alt || `${dish.name} — Pure Vegetarian Dining at Hestiia`
+
+    return (
+      <div className="dish-card" key={dish.id}>
+        {/* Image wrap with parallax image */}
+        <div className="dish-image-wrap">
+          {imgSrc && (
+            <img
+              src={imgSrc}
+              alt={imgAlt}
+              loading="lazy"
+              decoding="async"
+              className="dish-parallax-img"
+            />
+          )}
+
+          {/* Badges: Veg Mark with gentle pulse + Floating Popular Ribbon with ShinyText */}
+          <div className="dish-card-badges">
+            <div className="veg-mark-box" title="100% Pure Vegetarian">
+              <div className="veg-pulse-dot" />
+            </div>
+
+            <div className="dish-popular-ribbon">
+              <Sparkles size={10} color="#1F1A16" />
+              <ShinyText text="Popular" speed={3.5} color="#1F1A16" shimmerColor="#FFF8E7" />
+            </div>
+          </div>
+
+          {/* Price with Gold Underline */}
+          <div className="dish-price-tag">
+            <span>₹{dish.price}</span>
+            <span className="dish-price-underline" />
+          </div>
+        </div>
+
+        {/* Card Details */}
+        <div className="dish-card-body">
+          <div>
+            <h3 className="dish-card-title">{dish.name}</h3>
+            <p className="dish-card-desc">{dish.description}</p>
+          </div>
+
+          <div className="dish-card-actions">
+            <Link to={`/menu/${dish.slug}`} className="dish-view-link">
+              <span>View dish</span>
+              <ArrowRight size={12} />
+            </Link>
+
+            {/* Add Button with Magnet (desktop) + ClickSpark (all) + TapScale */}
+            <Magnet strength={0.25} disabled={!isDesktop} padding={20}>
+              <ClickSpark sparkColor="var(--color-brass, #B89A64)" sparkCount={8}>
+                <TapScale tapScale={0.97} liftOnHover={isDesktop}>
+                  <button
+                    type="button"
+                    className="dish-add-btn"
+                    onClick={e => e.stopPropagation()}
+                    aria-label={`Add ${dish.name} to order`}
+                  >
+                    <Plus size={13} />
+                    <span>Add</span>
+                  </button>
+                </TapScale>
+              </ClickSpark>
+            </Magnet>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <section
       ref={sectionRef}
-      className="signature-dishes-teaser section section-dark"
-      style={{
-        padding: 'clamp(56px, 8vw, 88px) 0',
-        backgroundColor: '#1F1A16',
-        borderTop: '1px solid rgba(184, 154, 100, 0.12)',
-        overflow: 'hidden',
-      }}
+      className="signature-section section section-dark"
+      aria-label="Signature Dishes of Hestiia"
     >
-      <div className="container">
-        {/* Header */}
-        <div
-          ref={headerRef}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            flexWrap: 'wrap',
-            gap: '20px',
-            marginBottom: '40px',
-          }}
-        >
-          <div>
+      {/* Desktop Layout: Horizontal Pinned Track */}
+      <div ref={pinWrapperRef} className="signature-pin-wrapper">
+        <div className="container signature-pin-inner">
+          {/* Pinned Heading on Left */}
+          <div className="signature-pinned-heading">
             <span
               style={{
                 fontFamily: 'var(--font-sans)',
@@ -133,267 +208,150 @@ export default function SignatureDishes() {
                 fontWeight: 600,
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
-                color: 'var(--color-brass)',
-                display: 'block',
-                marginBottom: '10px',
+                color: 'var(--color-brass, #B89A64)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '12px',
               }}
             >
+              <Sparkles size={12} color="var(--color-brass, #B89A64)" />
               Signatures of Hestiia
             </span>
+
             <h2
               style={{
                 fontFamily: 'var(--font-serif)',
-                fontSize: 'clamp(28px, 4vw, 42px)',
+                fontSize: 'clamp(32px, 3.5vw, 46px)',
                 fontWeight: 300,
-                color: 'var(--color-text-inverse)',
-                margin: 0,
-                lineHeight: 1.2,
+                color: 'var(--color-text-inverse, #F6EFE4)',
+                margin: '0 0 16px 0',
+                lineHeight: 1.18,
               }}
             >
               Crafted with Heritage Spices.
             </h2>
-          </div>
 
-          <motion.div
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Link
-              to="/menu"
+            <p
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: 'var(--color-brass)',
                 fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 300,
+                lineHeight: 1.7,
+                color: 'rgba(246, 239, 228, 0.76)',
+                marginBottom: '28px',
               }}
             >
-              <span>See Full Menu (193 Dishes)</span>
-              <ArrowRight size={14} />
+              Slow-simmered vegetarian curries, clay-oven flatbreads, and aromatic gravies cherished by families across Kanpur.
+            </p>
+
+            {/* See Full Menu Button with GradientText */}
+            <Link to="/menu" className="signature-menu-btn">
+              <GradientText colors={['#B89A64', '#F6EFE4', '#E6C687', '#B89A64']} animationSpeed={7}>
+                <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  See Full Menu (193 Dishes)
+                </span>
+              </GradientText>
+              <ArrowRight size={14} className="menu-btn-arrow" />
             </Link>
-          </motion.div>
+          </div>
+
+          {/* Sliding Cards Viewport */}
+          <div className="signature-track-viewport">
+            <div ref={cardsTrackRef} className="signature-cards-track">
+              {featuredDishes.map(renderDishCard)}
+            </div>
+          </div>
         </div>
 
-        {/* 6 Dish Cards Grid with Framer Motion hover & tap */}
+        {/* Progress Bar at Bottom of Pinned Track */}
+        <div className="signature-progress-track">
+          <div ref={progressLineRef} className="signature-progress-bar" />
+        </div>
+      </div>
+
+      {/* Mobile/Tablet Layout: Native Swipe Row (No Pin) */}
+      <div className="container signature-mobile-container">
+        <div className="signature-mobile-header">
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--color-brass, #B89A64)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginBottom: '10px',
+            }}
+          >
+            <Sparkles size={12} color="var(--color-brass, #B89A64)" />
+            Signatures of Hestiia
+          </span>
+
+          <h2
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 'clamp(28px, 4vw, 36px)',
+              fontWeight: 300,
+              color: 'var(--color-text-inverse, #F6EFE4)',
+              margin: '0 0 12px 0',
+              lineHeight: 1.2,
+            }}
+          >
+            Crafted with Heritage Spices.
+          </h2>
+
+          <p
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              color: 'rgba(246, 239, 228, 0.72)',
+              margin: 0,
+            }}
+          >
+            Slow-simmered vegetarian curries and clay-oven flatbreads.
+          </p>
+        </div>
+
+        {/* Mobile Swipe Row with Center Card Scaling */}
         <div
-          ref={gridRef}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '24px',
-            marginBottom: '36px',
-          }}
+          ref={mobileCarouselRef}
+          className="signature-mobile-carousel"
+          onScroll={handleMobileScroll}
         >
-          {featuredDishes.map(dish => {
-            const category = MENU_CATEGORIES.find(c => c.id === dish.categoryId)
-            const imgSrc = dish.image?.srcSmall || category?.fallbackImage.srcSmall || ''
-            const imgAlt = dish.image?.alt || `${dish.name} — Pure Vegetarian Dining at Hestiia`
+          {featuredDishes.map((dish, idx) => {
+            const isActive = idx === activeMobileIdx
 
             return (
               <motion.div
                 key={dish.id}
-                whileHover={{ y: -6, transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
+                className="signature-mobile-item-wrap"
                 whileTap={{ scale: 0.98 }}
                 style={{
-                  backgroundColor: 'rgba(38, 31, 26, 0.75)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(184, 154, 100, 0.18)',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
-                }}
-                className="dish-teaser-card"
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.45)'
-                  e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.5)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'rgba(184, 154, 100, 0.18)'
-                  e.currentTarget.style.boxShadow = 'none'
+                  transform: isActive ? 'scale(1)' : 'scale(0.94)',
+                  opacity: isActive ? 1 : 0.75,
                 }}
               >
-                {/* Image */}
-                <div style={{ position: 'relative', width: '100%', paddingTop: '62%', overflow: 'hidden', backgroundColor: '#16120F' }}>
-                  {imgSrc && (
-                    <img
-                      src={imgSrc}
-                      alt={imgAlt}
-                      loading="lazy"
-                      decoding="async"
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.5s ease',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.transform = 'scale(1.06)'
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.transform = 'scale(1)'
-                      }}
-                    />
-                  )}
-
-                  {/* Badges */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '10px',
-                      left: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      zIndex: 2,
-                    }}
-                  >
-                    {/* Pure Veg Mark */}
-                    <div
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        border: '1.5px solid #2F7D4F',
-                        borderRadius: '3px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(31, 26, 22, 0.88)',
-                      }}
-                    >
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#2F7D4F' }} />
-                    </div>
-
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '2px 6px',
-                        borderRadius: '10px',
-                        backgroundColor: 'var(--color-brass)',
-                        color: '#1F1A16',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                      }}
-                    >
-                      <Sparkles size={10} />
-                      Signature
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      zIndex: 2,
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: 'rgba(31, 26, 22, 0.9)',
-                      border: '1px solid rgba(184, 154, 100, 0.35)',
-                      color: 'var(--color-brass)',
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    ₹{dish.price}
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div style={{ padding: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <h3
-                      style={{
-                        fontFamily: 'var(--font-serif)',
-                        fontSize: '20px',
-                        color: 'var(--color-text-inverse)',
-                        margin: '0 0 6px 0',
-                      }}
-                    >
-                      {dish.name}
-                    </h3>
-                    <p
-                      style={{
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '13px',
-                        lineHeight: 1.6,
-                        color: 'rgba(246, 239, 228, 0.7)',
-                        margin: 0,
-                      }}
-                    >
-                      {dish.description}
-                    </p>
-                  </div>
-
-                  <div style={{ marginTop: '16px' }}>
-                    <Link
-                      to={`/menu/${dish.slug}`}
-                      style={{
-                        fontSize: '11px',
-                        fontFamily: 'var(--font-sans)',
-                        fontWeight: 600,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'var(--color-brass)',
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                    >
-                      <span>View dish</span>
-                      <ArrowRight size={12} />
-                    </Link>
-                  </div>
-                </div>
+                {renderDishCard(dish)}
               </motion.div>
             )
           })}
         </div>
 
-        {/* Center CTA */}
-        <div style={{ textAlign: 'center' }}>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: 'inline-block' }}
-          >
-            <Link
-              to="/menu"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 28px',
-                backgroundColor: 'var(--color-brass)',
-                color: '#1F1A16',
-                borderRadius: 'var(--radius-sm)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '12px',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-              }}
-            >
-              <span>See Full 193-Dish Menu</span>
-              <ArrowRight size={14} />
-            </Link>
-          </motion.div>
+        {/* Mobile CTA */}
+        <div className="signature-mobile-footer">
+          <Link to="/menu" className="signature-menu-btn">
+            <GradientText colors={['#B89A64', '#F6EFE4', '#E6C687', '#B89A64']}>
+              <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                See Full Menu (193 Dishes)
+              </span>
+            </GradientText>
+            <ArrowRight size={14} className="menu-btn-arrow" />
+          </Link>
         </div>
       </div>
     </section>

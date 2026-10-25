@@ -1,0 +1,94 @@
+/* StoryTeaser animations and layout */
+.story-teaser {
+  position: relative;
+  overflow: hidden;
+  background-color: #1F1A16;
+  padding: clamp(56px, 8vw, 96px) 0;
+}
+
+.story-teaser-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: center;
+}
+
+.story-image-col {
+  position: relative;
+}
+
+.story-text-col {
+  position: relative;
+}
+
+/* Floating gold ornament (desktop only) */
+.story-floating-ornament {
+  position: absolute;
+  top: -24px;
+  right: -24px;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  opacity: 0.65;
+  animation: floatDrift 8s ease-in-out infinite alternate;
+  z-index: 3;
+}
+
+@keyframes floatDrift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(8px, -12px) rotate(8deg);
+  }
+  100% {
+    transform: translate(-6px, 8px) rotate(-6deg);
+  }
+}
+
+/* Button style */
+.story-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 26px;
+  border: 1px solid var(--color-brass, #B89A64);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--color-brass, #B89A64);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.story-cta-btn:hover {
+  background-color: var(--color-brass, #B89A64);
+  color: #1F1A16;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+  .story-teaser-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .story-image-col {
+    order: 1; /* image first on mobile */
+  }
+
+  .story-text-col {
+    order: 2; /* text second on mobile */
+  }
+
+  .story-floating-ornament {
+    display: none;
+  }
+}
