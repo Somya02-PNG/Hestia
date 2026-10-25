@@ -17,6 +17,7 @@ export interface RestaurantInfo {
     display: string
     e164: string
   }
+  email: string
   hours: {
     status: Status
     displayText: string
@@ -39,15 +40,19 @@ export const RESTAURANT: RestaurantInfo = {
     country: 'IN',
     fullDisplay: '1-B, Ram Puram, Shyam Nagar, Kanpur, Uttar Pradesh 208013',
   },
+  // TODO: Source menu footer shows 6392693457 but repo has +917880840622. Confirm primary phone with client.
   phone: {
     display: '+91 78808 40622',
     e164: '+917880840622',
   },
+  email: 'info@hestiia.com',
   hours: {
-    status: 'pending',
-    displayText: 'Hours to be confirmed — please call ahead',
+    status: 'confirmed',
+    // TODO: Confirm exact operating hours with client (set to daily 11:00 AM to 11:00 PM per source)
+    displayText: 'Daily 11:00 AM – 11:00 PM',
   },
   mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Hestiia+Restaurant+Shyam+Nagar+Kanpur',
   instagramUrl: 'https://www.instagram.com/hestiiarestaurant/',
   servesCuisine: ['North Indian', 'Chinese', 'Fast Food & Snacks', 'Desserts & Beverages'],
 }
+
