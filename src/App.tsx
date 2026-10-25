@@ -26,6 +26,7 @@ import Privacy from './pages/Privacy'
 import RefundPolicy from './pages/RefundPolicy'
 import DeliveryPolicy from './pages/DeliveryPolicy'
 import NotFound from './pages/NotFound'
+import MotionTest from './pages/MotionTest'
 
 export default function App() {
   const [ready, setReady] = useState(false)
@@ -80,6 +81,9 @@ export default function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/delivery-policy" element={<DeliveryPolicy />} />
+            {import.meta.env.DEV && (
+              <Route path="/motion-test" element={<MotionTest />} />
+            )}
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
